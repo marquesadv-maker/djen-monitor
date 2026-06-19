@@ -444,44 +444,41 @@ async function testarApi() {
   }
 }
 
-// ── Busca DJEN direto do browser (evita bloqueio de IP em servidores cloud) ──
+// ── Busca DJEN direto do browser ─────────────────────────────────────────────
+// Uma única requisição sem filtro de tribunal retorna TODAS as publicações do
+// advogado no período. Filtro por tribunal é feito localmente nos resultados.
 const DJEN_API = 'https://comunicaapi.pje.jus.br/api/v1/comunicacao';
 
-async function buscarDjenTribunal(trib, params) {
-  const erros = [], itens = [];
+async function buscarDjenTodos(tribunais, params) {
+  const todasItens = [], todosErros = [];
   let pagina = 1;
   while (true) {
-    const p = new URLSearchParams({ ...params, tribunal: trib, pagina });
+    const p = new URLSearchParams({ ...params, pagina, itensPorPagina: 50 });
     let resp;
     try {
-      resp = await fetch(`${DJEN_API}?${p}`, {
-        headers: { 'Accept': 'application/json' }
-      });
+      resp = await fetch(`${DJEN_API}?${p}`, { headers: { 'Accept': 'application/json' } });
     } catch(e) {
-      erros.push(`${trib}: ${e.message}`);
+      todosErros.push('DJEN: ' + e.message);
       break;
     }
-    if (resp.status === 403 || resp.status === 404) break;
-    if (!resp.ok) { erros.push(`${trib}: HTTP ${resp.status}`); break; }
+    if (!resp.ok) {
+      todosErros.push('DJEN HTTP ' + resp.status);
+      break;
+    }
     let dados;
     try { dados = await resp.json(); } catch(e) { break; }
     const lista = Array.isArray(dados) ? dados : (dados.items || []);
     if (!lista.length) break;
-    lista.forEach(it => { it._tribunal = trib; });
-    itens.push(...lista);
-    if (lista.length < 20) break;
+    // Filtrar pelos tribunais selecionados (se informados)
+    const tribs = new Set(tribunais);
+    lista.forEach(it => {
+      it._tribunal = it.siglaTribunal || '';
+      if (!tribunais.length || tribs.has(it._tribunal)) todasItens.push(it);
+    });
+    if (lista.length < 50) break;
     pagina++;
-  }
-  return { itens, erros };
-}
-
-async function buscarDjenTodos(tribunais, params) {
-  const LOTE = 8;
-  const todasItens = [], todosErros = [];
-  for (let i = 0; i < tribunais.length; i += LOTE) {
-    const lote = tribunais.slice(i, i + LOTE);
-    const resultados = await Promise.all(lote.map(t => buscarDjenTribunal(t, params)));
-    resultados.forEach(r => { todasItens.push(...r.itens); todosErros.push(...r.erros); });
+    // Pausa entre páginas para não estourar rate limit (20 req/min)
+    await new Promise(r => setTimeout(r, 500));
   }
   return { itens: todasItens, erros: todosErros };
 }

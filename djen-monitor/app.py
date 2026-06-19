@@ -138,18 +138,20 @@ _DJEN_HEADERS = {
 }
 
 
-def _buscar_tribunal(trib: str, data_inicio: str, data_fim: str,
-                     numero_oab: str, uf_oab: str, nome_advogado: str) -> tuple:
-    """Busca publicações de um único tribunal — roda em thread paralela."""
-    itens_trib = []
-    erros_trib = []
+def buscar_djen(data_inicio: str, data_fim: str, tribunais: list,
+                numero_oab: str, uf_oab: str, nome_advogado: str = "") -> tuple:
+    """Busca todas as publicações do advogado sem filtrar por tribunal.
+    Uma única requisição paginada retorna tudo — evita rate limit da API."""
+    todas = []
+    erros = []
+    tribs_set = set(tribunais)
     pagina = 1
+
     while True:
         params = {
             "pagina": pagina,
-            "itensPorPagina": 20,
+            "itensPorPagina": 50,
             "meio": "D",
-            "tribunal": trib,
             "dataDisponibilizacaoInicio": data_inicio,
             "dataDisponibilizacaoFim": data_fim,
             "numeroOab": numero_oab,
@@ -164,10 +166,10 @@ def _buscar_tribunal(trib: str, data_inicio: str, data_fim: str,
             try:
                 resp = requests.get(f"{DJEN_BASE_URL}/comunicacao",
                                     params=params, headers=_DJEN_HEADERS,
-                                    timeout=20)
-                if resp.status_code == 403:
-                    resp = None
-                    break
+                                    timeout=45)
+                if resp.status_code in (403, 404):
+                    erros.append(f"DJEN bloqueou acesso (HTTP {resp.status_code})")
+                    return todas, erros
                 if resp.status_code == 503:
                     time.sleep(3)
                     tentativas += 1
@@ -177,7 +179,7 @@ def _buscar_tribunal(trib: str, data_inicio: str, data_fim: str,
             except requests.exceptions.RequestException as e:
                 tentativas += 1
                 if tentativas >= 3:
-                    erros_trib.append(f"{trib}/p{pagina}: {str(e)[:80]}")
+                    erros.append(f"DJEN p{pagina}: {str(e)[:80]}")
                     resp = None
                 else:
                     time.sleep(2)
@@ -195,35 +197,17 @@ def _buscar_tribunal(trib: str, data_inicio: str, data_fim: str,
             break
 
         for item in itens:
+            trib = item.get("siglaTribunal", "")
             item["_tribunal"] = trib
             item["_classificacao"] = classificar(item)
+            # Filtrar pelos tribunais selecionados
+            if not tribs_set or trib in tribs_set:
+                todas.append(item)
 
-        itens_trib.extend(itens)
-        if len(itens) < 20:
+        if len(itens) < 50:
             break
         pagina += 1
-
-    return itens_trib, erros_trib
-
-
-def buscar_djen(data_inicio: str, data_fim: str, tribunais: list,
-                numero_oab: str, uf_oab: str, nome_advogado: str = "") -> tuple:
-    todas = []
-    erros = []
-
-    with ThreadPoolExecutor(max_workers=10) as pool:
-        futuros = {
-            pool.submit(_buscar_tribunal, trib, data_inicio, data_fim,
-                        numero_oab, uf_oab, nome_advogado): trib
-            for trib in tribunais
-        }
-        for fut in as_completed(futuros):
-            try:
-                itens, errs = fut.result()
-                todas.extend(itens)
-                erros.extend(errs)
-            except Exception as e:
-                erros.append(f"{futuros[fut]}: {str(e)[:80]}")
+        time.sleep(0.5)  # respeitar rate limit
 
     return todas, erros
 
