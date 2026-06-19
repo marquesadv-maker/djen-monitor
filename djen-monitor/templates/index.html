@@ -556,7 +556,7 @@ async function buscar() {
   const dataFim  = document.getElementById('data-fim').value || dataIni;
   const senha    = document.getElementById('senha').value;
 
-  const tribunais = [...document.querySelectorAll('#tribunais-grid input:checked')]
+  const tribunais = [...document.querySelectorAll('.trib-check input:checked')]
                     .map(cb => cb.value);
 
   const alertas = document.getElementById('alertas');
