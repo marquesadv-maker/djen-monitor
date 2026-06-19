@@ -483,22 +483,46 @@ async function buscarDjenTodos(tribunais, params) {
     const urlFinal = `${DJEN_API}?${p}`;
     setMsg('🔍 Consultando DJEN (página ' + pagina + ')… pode demorar até 2 minutos.');
 
-    let resp, texto;
-    try {
-      resp = await fetchComTimeout(urlFinal, 150000); // 2.5 min
-      texto = await resp.text();
-    } catch(e) {
-      if (e.name === 'AbortError') {
-        todosErros.push('DJEN: tempo esgotado (API lenta). Tente novamente.');
-      } else {
-        todosErros.push('DJEN erro: ' + e.message);
+    let resp, texto, tentativas = 0;
+    while (true) {
+      try {
+        resp = await fetchComTimeout(urlFinal, 150000); // 2.5 min
+        texto = await resp.text();
+      } catch(e) {
+        if (e.name === 'AbortError') {
+          todosErros.push('DJEN: tempo esgotado (API lenta). Tente novamente.');
+        } else {
+          todosErros.push('DJEN erro: ' + e.message);
+        }
+        return { itens: todasItens, erros: todosErros };
       }
-      break;
-    }
 
-    if (!resp.ok) {
-      todosErros.push('DJEN HTTP ' + resp.status);
-      break;
+      // Retry automático em 500/502/503/504 (DJEN sobrecarregado)
+      if ([500, 502, 503, 504].includes(resp.status)) {
+        tentativas++;
+        let msgDjen = '';
+        try { msgDjen = JSON.parse(texto).message || texto.slice(0, 120); }
+        catch { msgDjen = texto.slice(0, 120); }
+
+        if (tentativas >= 4) {
+          todosErros.push(`DJEN HTTP ${resp.status}: ${msgDjen}`);
+          return { itens: todasItens, erros: todosErros };
+        }
+        const espera = tentativas * 15; // 15s, 30s, 45s
+        setMsg(`⏳ DJEN está sobrecarregado (${resp.status}). Tentativa ${tentativas}/3 — aguardando ${espera}s antes de tentar novamente…`);
+        await new Promise(r => setTimeout(r, espera * 1000));
+        continue; // retry
+      }
+
+      if (!resp.ok) {
+        let msgDjen = '';
+        try { msgDjen = JSON.parse(texto).message || texto.slice(0, 120); }
+        catch { msgDjen = texto.slice(0, 120); }
+        todosErros.push(`DJEN HTTP ${resp.status}: ${msgDjen}`);
+        return { itens: todasItens, erros: todosErros };
+      }
+
+      break; // sucesso — sair do loop de retry
     }
 
     let dados;
