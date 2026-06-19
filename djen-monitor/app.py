@@ -409,7 +409,11 @@ def deduplicar(publicacoes: list) -> list:
 
 @app.route("/")
 def index():
-    return render_template("index.html", tribunais=TRIBUNAIS_DISPONIVEIS)
+    from flask import make_response
+    resp = make_response(render_template("index.html", tribunais=TRIBUNAIS_DISPONIVEIS))
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
 
 
 @app.route("/api/buscar", methods=["POST"])
