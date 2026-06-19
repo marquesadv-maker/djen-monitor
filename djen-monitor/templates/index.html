@@ -453,32 +453,57 @@ async function buscarDjenTodos(tribunais, params) {
   const todasItens = [], todosErros = [];
   let pagina = 1;
   while (true) {
-    const p = new URLSearchParams({ ...params, pagina, itensPorPagina: 50 });
-    let resp;
+    const p = new URLSearchParams({
+      pagina,
+      itensPorPagina: 50,
+      meio: 'D',
+      dataDisponibilizacaoInicio: params.dataDisponibilizacaoInicio,
+      dataDisponibilizacaoFim:    params.dataDisponibilizacaoFim,
+      numeroOab: params.numeroOab,
+      ufOab:     params.ufOab,
+    });
+    if (params.nomeAdvogado) p.set('nomeAdvogado', params.nomeAdvogado);
+
+    const urlFinal = `${DJEN_API}?${p}`;
+    console.log('[DJEN] fetch:', urlFinal);
+
+    let resp, texto;
     try {
-      resp = await fetch(`${DJEN_API}?${p}`, { headers: { 'Accept': 'application/json' } });
+      resp = await fetch(urlFinal);
+      texto = await resp.text();
+      console.log('[DJEN] status:', resp.status, '| body[:200]:', texto.slice(0,200));
     } catch(e) {
-      todosErros.push('DJEN: ' + e.message);
+      console.error('[DJEN] erro fetch:', e);
+      todosErros.push('DJEN erro de rede: ' + e.message);
       break;
     }
+
     if (!resp.ok) {
-      todosErros.push('DJEN HTTP ' + resp.status);
+      todosErros.push('DJEN HTTP ' + resp.status + ': ' + texto.slice(0,100));
       break;
     }
+
     let dados;
-    try { dados = await resp.json(); } catch(e) { break; }
+    try { dados = JSON.parse(texto); } catch(e) {
+      todosErros.push('DJEN resposta inválida: ' + texto.slice(0,80));
+      break;
+    }
+
     const lista = Array.isArray(dados) ? dados : (dados.items || []);
+    console.log('[DJEN] itens na página', pagina, ':', lista.length, '| count:', dados.count);
+
     if (!lista.length) break;
-    // Filtrar pelos tribunais selecionados (se informados)
+
     const tribs = new Set(tribunais);
     lista.forEach(it => {
       it._tribunal = it.siglaTribunal || '';
       if (!tribunais.length || tribs.has(it._tribunal)) todasItens.push(it);
     });
+    console.log('[DJEN] total acumulado após filtro:', todasItens.length);
+
     if (lista.length < 50) break;
     pagina++;
-    // Pausa entre páginas para não estourar rate limit (20 req/min)
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 600));
   }
   return { itens: todasItens, erros: todosErros };
 }
@@ -521,10 +546,12 @@ async function buscar() {
     const { itens: publicacoes, erros: errosDjen } = await buscarDjenTodos(tribunais, params);
 
     if (errosDjen.length) {
-      alerta('warning', '⚠️ Erros parciais no DJEN: ' + errosDjen.join(' | '));
+      alerta('warning', '⚠️ Erro DJEN: ' + errosDjen.join(' | '));
     }
     if (!publicacoes.length) {
-      alerta('info', 'Nenhuma publicação encontrada para o período e parâmetros informados.');
+      alerta('info', `Nenhuma publicação encontrada para o período informado.
+        <br><small>OAB: ${oabNum}/${oabUf} | Data: ${dataIni} a ${dataFim} | Erros: ${errosDjen.length > 0 ? errosDjen.join(', ') : 'nenhum'}
+        <br>Abra o Console do browser (F12 → Console) para ver o log detalhado.</small>`);
       return;
     }
 
