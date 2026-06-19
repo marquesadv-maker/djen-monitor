@@ -444,25 +444,65 @@ async function testarApi() {
   }
 }
 
+// ── Busca DJEN direto do browser (evita bloqueio de IP em servidores cloud) ──
+const DJEN_API = 'https://comunicaapi.pje.jus.br/api/v1/comunicacao';
+
+async function buscarDjenTribunal(trib, params) {
+  const erros = [], itens = [];
+  let pagina = 1;
+  while (true) {
+    const p = new URLSearchParams({ ...params, tribunal: trib, pagina });
+    let resp;
+    try {
+      resp = await fetch(`${DJEN_API}?${p}`, {
+        headers: { 'Accept': 'application/json' }
+      });
+    } catch(e) {
+      erros.push(`${trib}: ${e.message}`);
+      break;
+    }
+    if (resp.status === 403 || resp.status === 404) break;
+    if (!resp.ok) { erros.push(`${trib}: HTTP ${resp.status}`); break; }
+    let dados;
+    try { dados = await resp.json(); } catch(e) { break; }
+    const lista = Array.isArray(dados) ? dados : (dados.items || []);
+    if (!lista.length) break;
+    lista.forEach(it => { it._tribunal = trib; });
+    itens.push(...lista);
+    if (lista.length < 20) break;
+    pagina++;
+  }
+  return { itens, erros };
+}
+
+async function buscarDjenTodos(tribunais, params) {
+  const LOTE = 8;
+  const todasItens = [], todosErros = [];
+  for (let i = 0; i < tribunais.length; i += LOTE) {
+    const lote = tribunais.slice(i, i + LOTE);
+    const resultados = await Promise.all(lote.map(t => buscarDjenTribunal(t, params)));
+    resultados.forEach(r => { todasItens.push(...r.itens); todosErros.push(...r.erros); });
+  }
+  return { itens: todasItens, erros: todosErros };
+}
+
 async function buscar() {
   const oabNum   = document.getElementById('oab-num').value.trim();
   const oabUf    = document.getElementById('oab-uf').value;
   const nomeAdv  = document.getElementById('nome-adv').value.trim();
   const dataIni  = document.getElementById('data-inicio').value;
-  const dataFim  = document.getElementById('data-fim').value;
+  const dataFim  = document.getElementById('data-fim').value || dataIni;
   const senha    = document.getElementById('senha').value;
 
   const tribunais = [...document.querySelectorAll('#tribunais-grid input:checked')]
                     .map(cb => cb.value);
 
-  // Validações
   const alertas = document.getElementById('alertas');
   alertas.innerHTML = '';
   if (!dataIni) return alerta('error', 'Informe a data de início.');
   if (!senha)   return alerta('error', 'Informe a senha do Projuris.');
   if (!tribunais.length) return alerta('error', 'Selecione ao menos um tribunal.');
 
-  // UI: loading
   document.getElementById('btn-buscar').disabled = true;
   document.getElementById('loading').style.display = 'block';
   document.getElementById('stats-row').style.display = 'none';
@@ -472,40 +512,46 @@ async function buscar() {
   RESULTADOS = [];
 
   try {
-    const resp = await fetch('/api/buscar', {
+    // 1. Buscar DJEN direto do browser
+    const params = {
+      itensPorPagina: 20, meio: 'D',
+      dataDisponibilizacaoInicio: dataIni,
+      dataDisponibilizacaoFim: dataFim,
+      numeroOab: oabNum, ufOab: oabUf,
+      ...(nomeAdv ? { nomeAdvogado: nomeAdv } : {}),
+    };
+    document.querySelector('#loading p').textContent = '🔍 Consultando DJEN…';
+    const { itens: publicacoes, erros: errosDjen } = await buscarDjenTodos(tribunais, params);
+
+    if (errosDjen.length) {
+      alerta('warning', '⚠️ Erros parciais no DJEN: ' + errosDjen.join(' | '));
+    }
+    if (!publicacoes.length) {
+      alerta('info', 'Nenhuma publicação encontrada para o período e parâmetros informados.');
+      return;
+    }
+
+    // 2. Enviar publicações ao backend para cruzar com Projuris
+    document.querySelector('#loading p').textContent = '⚖️ Cruzando com Projuris…';
+    const resp = await fetch('/api/cruzar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        numeroOab: oabNum,
-        ufOab: oabUf,
-        nomeAdvogado: nomeAdv,
-        dataInicio: dataIni,
-        dataFim: dataFim,
-        tribunais,
-        senha,
-      }),
+      body: JSON.stringify({ publicacoes, senha, dataInicio: dataIni, dataFim }),
     });
 
     const data = await resp.json();
-
     if (!resp.ok || data.erro) {
       alerta('error', '❌ ' + (data.erro || 'Erro desconhecido.'));
       return;
     }
 
     RESULTADOS = data.resultados || [];
-
-    // Alertas DJEN
-    if (data.errosDjen && data.errosDjen.length) {
-      alerta('warning', '⚠️ Erros parciais no DJEN: ' + data.errosDjen.join(' | '));
-    }
     if (!RESULTADOS.length) {
       alerta('info', 'Nenhuma publicação encontrada para o período e parâmetros informados.');
     }
 
-    renderStats(data.stats, data.periodo, data.geradoEm);
+    renderStats(data.stats, `${dataIni} a ${dataFim}`, data.geradoEm);
     renderCards(RESULTADOS);
-
     document.getElementById('stats-row').style.display = 'grid';
     document.getElementById('resultados-section').style.display = 'block';
     if (RESULTADOS.length) document.getElementById('export-btn').style.display = 'inline-block';
@@ -515,6 +561,7 @@ async function buscar() {
   } finally {
     document.getElementById('btn-buscar').disabled = false;
     document.getElementById('loading').style.display = 'none';
+    document.querySelector('#loading p').textContent = '⏳ Consultando DJEN e Projuris…';
   }
 }
 

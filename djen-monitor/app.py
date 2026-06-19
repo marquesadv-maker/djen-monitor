@@ -538,6 +538,102 @@ def buscar():
     })
 
 
+@app.route("/api/cruzar", methods=["POST"])
+def cruzar():
+    """Recebe publicações já buscadas pelo browser e cruza com Projuris."""
+    dados = request.json or {}
+    publicacoes = dados.get("publicacoes", [])
+    senha       = dados.get("senha", "")
+    data_inicio = dados.get("dataInicio", "")
+    data_fim    = dados.get("dataFim", data_inicio)
+
+    if not senha:
+        return jsonify({"erro": "Senha do Projuris obrigatória"}), 400
+    if not publicacoes:
+        return jsonify({"erro": "Nenhuma publicação recebida"}), 400
+
+    try:
+        token = autenticar_projuris(senha)
+    except Exception as e:
+        return jsonify({"erro": f"Falha na autenticação Projuris: {e}"}), 401
+
+    # Classificar e extrair números únicos
+    for pub in publicacoes:
+        pub["_classificacao"] = classificar(pub)
+
+    numeros_unicos = list({extrair_numero(p) for p in publicacoes if extrair_numero(p)})
+
+    processos_cache = {}
+    def _verificar(num):
+        return num, verificar_projuris(token, num)
+
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        for num, proj in pool.map(_verificar, numeros_unicos):
+            processos_cache[num] = proj
+
+    resultados = []
+    for pub in publicacoes:
+        num = extrair_numero(pub)
+        polo_ativo, polo_passivo = extrair_partes(pub)
+        texto_html = pub.get("texto", "")
+        texto_limpo = re.sub(r"<[^>]+>", " ", texto_html).strip()
+        texto_limpo = re.sub(r"\s+", " ", texto_limpo)
+        prazo = extrair_prazo(texto_limpo)
+
+        proj = processos_cache.get(num, {"encontrado": False, "status": "SEM_NUMERO"})
+        cls  = pub.get("_classificacao", "INFORMATIVA")
+
+        if not proj["encontrado"]:
+            status_final = "NAO_CADASTRADO"
+        elif not proj.get("tem_atividade", False):
+            status_final = "CADASTRADO_SEM_TAREFA"
+        else:
+            status_final = "INFORMATIVA"
+
+        resultados.append({
+            "numero":      num,
+            "tribunal":    pub.get("siglaTribunal", pub.get("_tribunal", "")),
+            "orgao":       pub.get("nomeOrgao", ""),
+            "data":        pub.get("datadisponibilizacao", pub.get("data_disponibilizacao", "")),
+            "tipo":        pub.get("tipoComunicacao", ""),
+            "tipoDoc":     pub.get("tipoDocumento", ""),
+            "classificacao": cls,
+            "poloAtivo":   polo_ativo,
+            "poloPassivo": polo_passivo,
+            "teor":        texto_limpo[:300],
+            "prazo":       prazo,
+            "link":        pub.get("link", ""),
+            "projuris": {
+                "encontrado":   proj["encontrado"],
+                "id":           proj.get("id"),
+                "status":       proj.get("status"),
+                "encerrado":    proj.get("encerrado", False),
+                "temAtividade": proj.get("tem_atividade", False),
+                "erro":         proj.get("erro"),
+            },
+            "statusFinal": status_final,
+        })
+
+    total          = len(resultados)
+    cadastrados    = sum(1 for r in resultados if r["projuris"]["encontrado"])
+    nao_cadastrados = total - cadastrados
+    sem_tarefa     = sum(1 for r in resultados if r["statusFinal"] == "CADASTRADO_SEM_TAREFA")
+    urgentes       = sum(1 for r in resultados if r["classificacao"] == "URGENTE"
+                         and r["statusFinal"] in ("NAO_CADASTRADO", "CADASTRADO_SEM_TAREFA"))
+
+    return jsonify({
+        "ok": True,
+        "stats": {
+            "total": total, "cadastrados": cadastrados,
+            "naoCadastrados": nao_cadastrados, "semTarefa": sem_tarefa,
+            "urgentes": urgentes,
+        },
+        "resultados":  resultados,
+        "periodo":     f"{data_inicio} a {data_fim}",
+        "geradoEm":    datetime.now().strftime("%d/%m/%Y %H:%M"),
+    })
+
+
 @app.route("/api/ping")
 def ping():
     return jsonify({"ok": True, "ts": datetime.now().isoformat()})
