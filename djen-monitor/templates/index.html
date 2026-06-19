@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor DJEN × Projuris — Marques Advogados</title>
+<style>
+  :root {
+    --primary: #1a3a5c;
+    --accent:  #c8960c;
+    --danger:  #c0392b;
+    --warning: #e67e22;
+    --success: #27ae60;
+    --info:    #2980b9;
+    --bg:      #f4f6f9;
+    --card:    #ffffff;
+    --border:  #dde2ea;
+    --text:    #2c3e50;
+    --muted:   #7f8c8d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+  /* ── Header ── */
+  header {
+    background: var(--primary);
+    color: #fff;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  }
+  header h1 { font-size: 1.25rem; font-weight: 700; }
+  header span { font-size: .85rem; opacity: .7; margin-top: 2px; }
+  .logo { font-size: 2rem; }
+
+  /* ── Layout ── */
+  main { max-width: 1300px; margin: 0 auto; padding: 24px 16px; }
+
+  /* ── Formulário ── */
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .form-card h2 { font-size: 1rem; font-weight: 700; color: var(--primary); margin-bottom: 18px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: .8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .form-group input, .form-group select {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: .95rem;
+    color: var(--text);
+    background: #fafbfc;
+    transition: border-color .2s;
+  }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); background: #fff; }
+
+  /* checkboxes tribunais */
+  .tribunais-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .trib-check { display: flex; align-items: center; gap: 5px; font-size: .82rem; cursor: pointer; }
+  .trib-check input { cursor: pointer; accent-color: var(--primary); }
+  .trib-grupo { margin-bottom: 10px; }
+  .trib-grupo:last-child { margin-bottom: 0; }
+  .trib-grupo-titulo { font-size: .75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; padding-bottom: 3px; border-bottom: 1px solid var(--border); }
+
+  .form-actions { display: flex; gap: 12px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 24px;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: .95rem;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: #234d7a; }
+  .btn-primary:disabled { background: #9ab; cursor: not-allowed; }
+  .btn-secondary { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+  .btn-secondary:hover { background: var(--primary); color: #fff; }
+
+  /* ── Stats ── */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    border-top: 4px solid var(--border);
+  }
+  .stat-card.danger  { border-top-color: var(--danger); }
+  .stat-card.warning { border-top-color: var(--warning); }
+  .stat-card.success { border-top-color: var(--success); }
+  .stat-card.info    { border-top-color: var(--info); }
+  .stat-card.total   { border-top-color: var(--primary); }
+  .stat-num  { font-size: 2rem; font-weight: 800; color: var(--text); }
+  .stat-label{ font-size: .78rem; color: var(--muted); margin-top: 2px; }
+
+  /* ── Filtro resultado ── */
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .filter-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all .15s;
+  }
+  .filter-btn.active, .filter-btn:hover { opacity: 1; }
+  .filter-btn[data-filter="ALL"]              { background: #eaecef; color: var(--text); }
+  .filter-btn[data-filter="ALL"].active       { background: var(--primary); color: #fff; }
+  .filter-btn[data-filter="NAO_CADASTRADO"]   { background: #fde8e8; color: var(--danger); border-color: var(--danger); }
+  .filter-btn[data-filter="NAO_CADASTRADO"].active { background: var(--danger); color: #fff; }
+  .filter-btn[data-filter="CADASTRADO_SEM_TAREFA"] { background: #fef3e2; color: var(--warning); border-color: var(--warning); }
+  .filter-btn[data-filter="CADASTRADO_SEM_TAREFA"].active { background: var(--warning); color: #fff; }
+  .filter-btn[data-filter="INFORMATIVA"]      { background: #e8f4fd; color: var(--info); border-color: var(--info); }
+  .filter-btn[data-filter="INFORMATIVA"].active { background: var(--info); color: #fff; }
+
+  #search-input {
+    margin-left: auto;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: .85rem;
+    width: 220px;
+  }
+
+  /* ── Cards resultado ── */
+  .result-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    transition: box-shadow .15s;
+  }
+  .result-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,.1); }
+  .result-card.NAO_CADASTRADO      { border-left-color: var(--danger); }
+  .result-card.CADASTRADO_SEM_TAREFA { border-left-color: var(--warning); }
+  .result-card.INFORMATIVA         { border-left-color: var(--info); }
+
+  .card-header { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: .72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge.NAO_CADASTRADO      { background: #fde8e8; color: var(--danger); }
+  .badge.CADASTRADO_SEM_TAREFA { background: #fef3e2; color: var(--warning); }
+  .badge.INFORMATIVA         { background: #e8f4fd; color: var(--info); }
+  .badge.URGENTE   { background: #fde8e8; color: var(--danger); }
+  .badge.IMPORTANTE{ background: #fef3e2; color: var(--warning); }
+
+  .card-num { font-weight: 700; font-size: .95rem; color: var(--primary); }
+  .card-trib { font-size: .8rem; color: var(--muted); background: #eef; padding: 2px 8px; border-radius: 10px; }
+  .card-data { font-size: .8rem; color: var(--muted); margin-left: auto; }
+
+  .card-body { font-size: .85rem; color: var(--text); }
+  .card-row  { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+  .card-label{ font-weight: 600; color: var(--muted); font-size: .78rem; min-width: 80px; }
+  .card-val  { color: var(--text); font-size: .85rem; }
+  .teor-text { font-size: .82rem; color: #555; margin-top: 6px; font-style: italic; border-left: 3px solid var(--border); padding-left: 8px; }
+  .prazo-tag { display: inline-block; background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: .78rem; font-weight: 700; margin-top: 4px; }
+
+  .card-footer { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .card-footer a { font-size: .78rem; color: var(--info); text-decoration: none; }
+  .card-footer a:hover { text-decoration: underline; }
+  .projuris-link {
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--success);
+    background: #e8f8ee;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .encerrado-tag { font-size: .72rem; color: var(--muted); background: #f0f0f0; padding: 2px 6px; border-radius: 8px; }
+
+  /* ── Loading ── */
+  #loading {
+    display: none;
+    text-align: center;
+    padding: 40px;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 5px solid #dde;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Error/Info ── */
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: .9rem;
+    margin-bottom: 14px;
+  }
+  .alert-error   { background: #fde8e8; color: var(--danger); border: 1px solid #f5c6cb; }
+  .alert-info    { background: #e8f4fd; color: var(--info); border: 1px solid #bee5eb; }
+  .alert-warning { background: #fef3e2; color: var(--warning); border: 1px solid #ffc107; }
+
+  /* ── Export ── */
+  #export-btn { display: none; }
+
+  /* ── Footer ── */
+  footer { text-align: center; font-size: .78rem; color: var(--muted); padding: 20px; margin-top: 20px; }
+
+  /* ── No results ── */
+  .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 1rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚖️</div>
+  <div>
+    <h1>Monitor DJEN × Projuris</h1>
+    <span>Marques Advogados S.S — Araguaína/TO</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ═══ FORMULÁRIO ═══ -->
+  <div class="form-card">
+    <h2>🔍 Parâmetros da Consulta</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>OAB Número</label>
+        <input type="text" id="oab-num" value="2265" placeholder="ex: 2265">
+      </div>
+      <div class="form-group">
+        <label>OAB Estado (UF)</label>
+        <select id="oab-uf">
+          <option value="TO" selected>TO</option>
+          <option value="PA">PA</option>
+          <option value="MA">MA</option>
+          <option value="GO">GO</option>
+          <option value="MT">MT</option>
+          <option value="DF">DF</option>
+          <option value="SP">SP</option>
+          <option value="RJ">RJ</option>
+          <option value="MG">MG</option>
+          <option value="BA">BA</option>
+          <option value="PE">PE</option>
+          <option value="CE">CE</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Nome do Advogado (opcional)</label>
+        <input type="text" id="nome-adv" placeholder="ex: Maria Elisa">
+      </div>
+      <div class="form-group">
+        <label>Data Início</label>
+        <input type="date" id="data-inicio" value="">
+      </div>
+      <div class="form-group">
+        <label>Data Fim</label>
+        <input type="date" id="data-fim" value="">
+      </div>
+      <div class="form-group">
+        <label>Senha Projuris</label>
+        <input type="password" id="senha" placeholder="••••••••">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:16px;">
+      <label>Tribunais</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-secondary" style="padding:4px 12px;font-size:.8rem;" onclick="selecionarTodos(true)">✔ Marcar todos</button>
+        <button type="button" class="btn btn-secondary" style="padding:4px 12px;font-size:.8rem;" onclick="selecionarTodos(false)">✖ Desmarcar todos</button>
+      </div>
+
+      <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:#fafbfc;">
+        <div class="trib-grupo">
+          <div class="trib-grupo-titulo">🏛️ Nacionais</div>
+          <div class="tribunais-grid" id="tribunais-grid">
+            {% for t in tribunais %}
+            {% if t in ['CJF','CNJ','SEEU','STJ','STM','TSE','TST'] %}
+            <label class="trib-check"><input type="checkbox" value="{{ t }}" checked> {{ t }}</label>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        <div class="trib-grupo">
+          <div class="trib-grupo-titulo">⚖️ Tribunais de Justiça (TJ)</div>
+          <div class="tribunais-grid">
+            {% for t in tribunais %}
+            {% if t.startswith('TJ') %}
+            <label class="trib-check"><input type="checkbox" value="{{ t }}" checked> {{ t }}</label>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        <div class="trib-grupo">
+          <div class="trib-grupo-titulo">🗳️ Tribunais Regionais Eleitorais (TRE)</div>
+          <div class="tribunais-grid">
+            {% for t in tribunais %}
+            {% if t.startswith('TRE') %}
+            <label class="trib-check"><input type="checkbox" value="{{ t }}" checked> {{ t }}</label>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        <div class="trib-grupo">
+          <div class="trib-grupo-titulo">🏦 Tribunais Regionais Federais (TRF)</div>
+          <div class="tribunais-grid">
+            {% for t in tribunais %}
+            {% if t.startswith('TRF') %}
+            <label class="trib-check"><input type="checkbox" value="{{ t }}" checked> {{ t }}</label>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        <div class="trib-grupo">
+          <div class="trib-grupo-titulo">👷 Tribunais Regionais do Trabalho (TRT)</div>
+          <div class="tribunais-grid">
+            {% for t in tribunais %}
+            {% if t.startswith('TRT') %}
+            <label class="trib-check"><input type="checkbox" value="{{ t }}" checked> {{ t }}</label>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btn-buscar" onclick="buscar()">▶ Executar Consulta</button>
+      <button class="btn btn-secondary" id="export-btn" onclick="exportarMarkdown()">⬇ Exportar Markdown</button>
+    </div>
+  </div>
+
+  <!-- ═══ PAINEL DIAGNÓSTICO PROJURIS ═══ -->
+  <details style="margin-bottom:16px;">
+    <summary style="cursor:pointer;font-weight:700;color:var(--primary);padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;list-style:none;">
+      🔬 Diagnóstico Projuris — testar API ao vivo
+    </summary>
+    <div style="background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:16px;">
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">
+        Use este painel para verificar se a API do Projuris está respondendo corretamente
+        e ver os campos reais retornados para um processo específico.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="form-group" style="flex:1;min-width:180px;">
+          <label>Senha Projuris</label>
+          <input type="password" id="dbg-senha" placeholder="••••••••">
+        </div>
+        <div class="form-group" style="flex:2;min-width:240px;">
+          <label>Número do Processo CNJ</label>
+          <input type="text" id="dbg-numero" placeholder="ex: 0001234-56.2023.5.10.0001">
+        </div>
+        <button class="btn btn-secondary" onclick="testarApi()" style="height:38px;">🔍 Testar</button>
+      </div>
+      <div id="dbg-resultado" style="margin-top:12px;display:none;">
+        <pre id="dbg-json" style="background:#1e1e2e;color:#cdd6f4;padding:14px;border-radius:8px;font-size:.78rem;overflow-x:auto;max-height:400px;overflow-y:auto;white-space:pre-wrap;"></pre>
+      </div>
+    </div>
+  </details>
+
+  <!-- ═══ LOADING ═══ -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p id="loading-msg">Consultando DJEN e Projuris… isso pode levar alguns minutos.</p>
+  </div>
+
+  <!-- ═══ ALERTAS ═══ -->
+  <div id="alertas"></div>
+
+  <!-- ═══ STATS ═══ -->
+  <div class="stats-row" id="stats-row" style="display:none"></div>
+
+  <!-- ═══ RESULTADOS ═══ -->
+  <div id="resultados-section" style="display:none">
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="ALL" onclick="filtrar('ALL')">Todos</button>
+      <button class="filter-btn" data-filter="NAO_CADASTRADO" onclick="filtrar('NAO_CADASTRADO')">⛔ Não Cadastrado</button>
+      <button class="filter-btn" data-filter="CADASTRADO_SEM_TAREFA" onclick="filtrar('CADASTRADO_SEM_TAREFA')">⚠️ Sem Tarefa</button>
+      <button class="filter-btn" data-filter="INFORMATIVA" onclick="filtrar('INFORMATIVA')">🔵 Informativa/OK</button>
+      <input type="text" id="search-input" placeholder="🔍 Buscar processo, parte..." oninput="filtrar()">
+    </div>
+    <div id="cards-container"></div>
+  </div>
+
+</main>
+
+<footer>
+  Monitor DJEN × Projuris &mdash; Marques Advogados S.S &mdash; Araguaína/TO<br>
+  Dados apenas para leitura. Nenhuma alteração é feita no Projuris.
+</footer>
+
+<script>
+let RESULTADOS = [];
+let filtroAtivo = 'ALL';
+
+// ── Data padrão: hoje ──
+(function() {
+  const hoje = new Date().toISOString().split('T')[0];
+  document.getElementById('data-inicio').value = hoje;
+  document.getElementById('data-fim').value = hoje;
+})();
+
+function selecionarTodos(marcar = true) {
+  document.querySelectorAll('input[type=checkbox][value]').forEach(cb => cb.checked = marcar);
+}
+
+async function testarApi() {
+  const senha  = document.getElementById('dbg-senha').value;
+  const numero = document.getElementById('dbg-numero').value.trim();
+  if (!senha) return alert('Informe a senha do Projuris.');
+
+  const pre = document.getElementById('dbg-json');
+  const box = document.getElementById('dbg-resultado');
+  pre.textContent = 'Aguardando resposta da API…';
+  box.style.display = 'block';
+
+  try {
+    const resp = await fetch('/api/debug-projuris', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senha, numeroProcesso: numero }),
+    });
+    const data = await resp.json();
+    pre.textContent = JSON.stringify(data, null, 2);
+  } catch(e) {
+    pre.textContent = 'Erro: ' + e.message;
+  }
+}
+
+async function buscar() {
+  const oabNum   = document.getElementById('oab-num').value.trim();
+  const oabUf    = document.getElementById('oab-uf').value;
+  const nomeAdv  = document.getElementById('nome-adv').value.trim();
+  const dataIni  = document.getElementById('data-inicio').value;
+  const dataFim  = document.getElementById('data-fim').value;
+  const senha    = document.getElementById('senha').value;
+
+  const tribunais = [...document.querySelectorAll('#tribunais-grid input:checked')]
+                    .map(cb => cb.value);
+
+  // Validações
+  const alertas = document.getElementById('alertas');
+  alertas.innerHTML = '';
+  if (!dataIni) return alerta('error', 'Informe a data de início.');
+  if (!senha)   return alerta('error', 'Informe a senha do Projuris.');
+  if (!tribunais.length) return alerta('error', 'Selecione ao menos um tribunal.');
+
+  // UI: loading
+  document.getElementById('btn-buscar').disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('stats-row').style.display = 'none';
+  document.getElementById('resultados-section').style.display = 'none';
+  document.getElementById('export-btn').style.display = 'none';
+  document.getElementById('cards-container').innerHTML = '';
+  RESULTADOS = [];
+
+  try {
+    const resp = await fetch('/api/buscar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        numeroOab: oabNum,
+        ufOab: oabUf,
+        nomeAdvogado: nomeAdv,
+        dataInicio: dataIni,
+        dataFim: dataFim,
+        tribunais,
+        senha,
+      }),
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok || data.erro) {
+      alerta('error', '❌ ' + (data.erro || 'Erro desconhecido.'));
+      return;
+    }
+
+    RESULTADOS = data.resultados || [];
+
+    // Alertas DJEN
+    if (data.errosDjen && data.errosDjen.length) {
+      alerta('warning', '⚠️ Erros parciais no DJEN: ' + data.errosDjen.join(' | '));
+    }
+    if (!RESULTADOS.length) {
+      alerta('info', 'Nenhuma publicação encontrada para o período e parâmetros informados.');
+    }
+
+    renderStats(data.stats, data.periodo, data.geradoEm);
+    renderCards(RESULTADOS);
+
+    document.getElementById('stats-row').style.display = 'grid';
+    document.getElementById('resultados-section').style.display = 'block';
+    if (RESULTADOS.length) document.getElementById('export-btn').style.display = 'inline-block';
+
+  } catch(e) {
+    alerta('error', '❌ Falha na requisição: ' + e.message);
+  } finally {
+    document.getElementById('btn-buscar').disabled = false;
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+function alerta(tipo, msg) {
+  const div = document.createElement('div');
+  div.className = 'alert alert-' + tipo;
+  div.innerHTML = msg;
+  document.getElementById('alertas').appendChild(div);
+}
+
+function renderStats(s, periodo, geradoEm) {
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card total">
+      <div class="stat-num">${s.total}</div>
+      <div class="stat-label">Total publicações</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-num">${s.naoCadastrados}</div>
+      <div class="stat-label">⛔ Não cadastrado</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-num">${s.semTarefa}</div>
+      <div class="stat-label">⚠️ Sem tarefa</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-num">${s.cadastrados - s.semTarefa < 0 ? 0 : s.cadastrados - s.semTarefa}</div>
+      <div class="stat-label">✅ OK / Informativa</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-num">${s.urgentes}</div>
+      <div class="stat-label">🚨 Urgentes pendentes</div>
+    </div>
+    <div class="stat-card info" style="border-top-color:#999;grid-column:span 1">
+      <div class="stat-num" style="font-size:1rem;margin-top:4px">${periodo}</div>
+      <div class="stat-label">Período · Gerado ${geradoEm}</div>
+    </div>
+  `;
+}
+
+function renderCards(lista) {
+  const container = document.getElementById('cards-container');
+  if (!lista.length) {
+    container.innerHTML = '<div class="empty">Nenhuma publicação encontrada.</div>';
+    return;
+  }
+
+  // Ordenar: NAO_CADASTRADO > CADASTRADO_SEM_TAREFA (URGENTE > IMPORTANTE) > INFORMATIVA
+  const ordem = { NAO_CADASTRADO: 0, CADASTRADO_SEM_TAREFA: 1, INFORMATIVA: 2 };
+  const clsOrd = { URGENTE: 0, IMPORTANTE: 1, INFORMATIVA: 2 };
+  lista = [...lista].sort((a,b) => {
+    const of = (ordem[a.statusFinal]||2) - (ordem[b.statusFinal]||2);
+    if (of !== 0) return of;
+    return (clsOrd[a.classificacao]||2) - (clsOrd[b.classificacao]||2);
+  });
+
+  container.innerHTML = lista.map(r => cardHTML(r)).join('');
+}
+
+function cardHTML(r) {
+  const icone = { NAO_CADASTRADO: '⛔', CADASTRADO_SEM_TAREFA: '⚠️', INFORMATIVA: '🔵' };
+  const texto = { NAO_CADASTRADO: 'Não cadastrado no Projuris', CADASTRADO_SEM_TAREFA: 'Cadastrado — sem tarefa', INFORMATIVA: 'OK / Informativa' };
+  const clsBadge = { URGENTE: 'URGENTE', IMPORTANTE: 'IMPORTANTE', INFORMATIVA: '' };
+
+  let projStatus;
+  if (!r.projuris.encontrado) {
+    projStatus = `<span style="font-size:.78rem;color:var(--danger);font-weight:600">❌ Não encontrado no Projuris</span>`;
+  } else {
+    const atividadeTag = r.projuris.temAtividade
+      ? `<span style="font-size:.72rem;color:var(--success);background:#e8f8ee;padding:2px 7px;border-radius:10px;font-weight:600">✅ Com atividades</span>`
+      : `<span style="font-size:.72rem;color:var(--warning);background:#fef3e2;padding:2px 7px;border-radius:10px;font-weight:600">⚠️ Sem atividades</span>`;
+    projStatus = `<span class="projuris-link">📋 Projuris #${r.projuris.id || '—'}</span>${atividadeTag}${r.projuris.encerrado ? '<span class="encerrado-tag">Encerrado</span>' : ''}`;
+  }
+
+  const prazoTag = r.prazo ? `<span class="prazo-tag">⏰ Prazo: ${r.prazo}</span>` : '';
+  const link = r.link ? `<a href="${r.link}" target="_blank">📄 Ver publicação</a>` : '';
+  const classBadge = clsBadge[r.classificacao] ? `<span class="badge ${r.classificacao}">${r.classificacao}</span>` : '';
+
+  return `
+  <div class="result-card ${r.statusFinal}" data-status="${r.statusFinal}" data-text="${(r.numero+' '+r.poloAtivo+' '+r.poloPassivo).toLowerCase()}">
+    <div class="card-header">
+      <span class="badge ${r.statusFinal}">${icone[r.statusFinal]||''} ${texto[r.statusFinal]||r.statusFinal}</span>
+      ${classBadge}
+      <span class="card-num">${r.numero || '(sem número)'}</span>
+      <span class="card-trib">${r.tribunal}</span>
+      <span class="card-data">${formatarData(r.data)}</span>
+    </div>
+    <div class="card-body">
+      ${r.orgao ? `<div class="card-row"><span class="card-label">Órgão</span><span class="card-val">${r.orgao}</span></div>` : ''}
+      ${r.tipo  ? `<div class="card-row"><span class="card-label">Tipo</span><span class="card-val">${r.tipo}${r.tipoDoc ? ' / ' + r.tipoDoc : ''}</span></div>` : ''}
+      ${r.poloAtivo  ? `<div class="card-row"><span class="card-label">Polo Ativo</span><span class="card-val">${r.poloAtivo}</span></div>` : ''}
+      ${r.poloPassivo? `<div class="card-row"><span class="card-label">Polo Passivo</span><span class="card-val">${r.poloPassivo}</span></div>` : ''}
+      ${r.teor ? `<div class="teor-text">${r.teor}</div>` : ''}
+      ${prazoTag}
+    </div>
+    <div class="card-footer">
+      ${projStatus}
+      ${link}
+    </div>
+  </div>`;
+}
+
+function formatarData(d) {
+  if (!d) return '';
+  try {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('pt-BR');
+  } catch { return d; }
+}
+
+function filtrar(f) {
+  if (f !== undefined) {
+    filtroAtivo = f;
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.filter === f);
+    });
+  }
+
+  const busca = (document.getElementById('search-input').value || '').toLowerCase();
+
+  const cards = document.querySelectorAll('.result-card');
+  cards.forEach(card => {
+    const statusOk = filtroAtivo === 'ALL' || card.dataset.status === filtroAtivo;
+    const textOk   = !busca || card.dataset.text.includes(busca);
+    card.style.display = (statusOk && textOk) ? '' : 'none';
+  });
+}
+
+function exportarMarkdown() {
+  if (!RESULTADOS.length) return;
+  const linhas = ['# Relatório DJEN × Projuris\n'];
+  const grupos = { NAO_CADASTRADO: [], CADASTRADO_SEM_TAREFA: [], INFORMATIVA: [] };
+  RESULTADOS.forEach(r => (grupos[r.statusFinal] || grupos.INFORMATIVA).push(r));
+
+  const secoes = [
+    ['⛔ NÃO CADASTRADO NO PROJURIS', grupos.NAO_CADASTRADO],
+    ['⚠️ CADASTRADO — SEM TAREFA', grupos.CADASTRADO_SEM_TAREFA],
+    ['✅ OK / INFORMATIVA', grupos.INFORMATIVA],
+  ];
+  for (const [titulo, lista] of secoes) {
+    if (!lista.length) continue;
+    linhas.push(`\n## ${titulo} (${lista.length})\n`);
+    lista.forEach(r => {
+      linhas.push(`### ${r.numero || '(sem número)'}`);
+      linhas.push(`- **Tribunal:** ${r.tribunal} | **Data:** ${r.data}`);
+      linhas.push(`- **Tipo:** ${r.tipo} | **Classificação:** ${r.classificacao}`);
+      if (r.poloAtivo)   linhas.push(`- **Polo Ativo:** ${r.poloAtivo}`);
+      if (r.poloPassivo) linhas.push(`- **Polo Passivo:** ${r.poloPassivo}`);
+      if (r.prazo)       linhas.push(`- **Prazo:** ${r.prazo}`);
+      if (r.teor)        linhas.push(`- **Teor:** ${r.teor}`);
+      if (r.link)        linhas.push(`- **Link:** ${r.link}`);
+      linhas.push('');
+    });
+  }
+
+  const blob = new Blob([linhas.join('\n')], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `djen-relatorio-${new Date().toISOString().split('T')[0]}.md`;
+  a.click();
+}
+</script>
+
+</body>
+</html>
