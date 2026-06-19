@@ -449,6 +449,22 @@ async function testarApi() {
 // advogado no período. Filtro por tribunal é feito localmente nos resultados.
 const DJEN_API = 'https://comunicaapi.pje.jus.br/api/v1/comunicacao';
 
+function setMsg(txt) {
+  const el = document.getElementById('loading-msg');
+  if (el) el.textContent = txt;
+}
+
+async function fetchComTimeout(url, ms) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal });
+    return r;
+  } finally {
+    clearTimeout(tid);
+  }
+}
+
 async function buscarDjenTodos(tribunais, params) {
   const todasItens = [], todosErros = [];
   let pagina = 1;
@@ -465,33 +481,33 @@ async function buscarDjenTodos(tribunais, params) {
     if (params.nomeAdvogado) p.set('nomeAdvogado', params.nomeAdvogado);
 
     const urlFinal = `${DJEN_API}?${p}`;
-    console.log('[DJEN] fetch:', urlFinal);
+    setMsg('🔍 Consultando DJEN (página ' + pagina + ')… pode demorar até 2 minutos.');
 
     let resp, texto;
     try {
-      resp = await fetch(urlFinal);
+      resp = await fetchComTimeout(urlFinal, 150000); // 2.5 min
       texto = await resp.text();
-      console.log('[DJEN] status:', resp.status, '| body[:200]:', texto.slice(0,200));
     } catch(e) {
-      console.error('[DJEN] erro fetch:', e);
-      todosErros.push('DJEN erro de rede: ' + e.message);
+      if (e.name === 'AbortError') {
+        todosErros.push('DJEN: tempo esgotado (API lenta). Tente novamente.');
+      } else {
+        todosErros.push('DJEN erro: ' + e.message);
+      }
       break;
     }
 
     if (!resp.ok) {
-      todosErros.push('DJEN HTTP ' + resp.status + ': ' + texto.slice(0,100));
+      todosErros.push('DJEN HTTP ' + resp.status);
       break;
     }
 
     let dados;
     try { dados = JSON.parse(texto); } catch(e) {
-      todosErros.push('DJEN resposta inválida: ' + texto.slice(0,80));
+      todosErros.push('DJEN resposta inválida.');
       break;
     }
 
     const lista = Array.isArray(dados) ? dados : (dados.items || []);
-    console.log('[DJEN] itens na página', pagina, ':', lista.length, '| count:', dados.count);
-
     if (!lista.length) break;
 
     const tribs = new Set(tribunais);
@@ -499,11 +515,11 @@ async function buscarDjenTodos(tribunais, params) {
       it._tribunal = it.siglaTribunal || '';
       if (!tribunais.length || tribs.has(it._tribunal)) todasItens.push(it);
     });
-    console.log('[DJEN] total acumulado após filtro:', todasItens.length);
 
+    setMsg('🔍 DJEN: ' + todasItens.length + ' publicações encontradas até agora…');
     if (lista.length < 50) break;
     pagina++;
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 1000));
   }
   return { itens: todasItens, erros: todosErros };
 }
