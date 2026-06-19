@@ -125,6 +125,18 @@ def projuris_get(token: str, endpoint: str) -> dict:
 # DJEN
 # ═══════════════════════════════════════════════════════════════
 
+_DJEN_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "pt-BR,pt;q=0.9",
+    "Referer": "https://comunicaapi.pje.jus.br/",
+}
+
+
 def buscar_djen(data_inicio: str, data_fim: str, tribunais: list,
                 numero_oab: str, uf_oab: str, nome_advogado: str = "") -> tuple:
     todas = []
@@ -150,7 +162,11 @@ def buscar_djen(data_inicio: str, data_fim: str, tribunais: list,
             while tentativas < 3:
                 try:
                     resp = requests.get(f"{DJEN_BASE_URL}/comunicacao",
-                                        params=params, timeout=30)
+                                        params=params, headers=_DJEN_HEADERS,
+                                        timeout=30)
+                    if resp.status_code == 403:
+                        resp = None
+                        break
                     if resp.status_code == 503:
                         time.sleep(5)
                         tentativas += 1
