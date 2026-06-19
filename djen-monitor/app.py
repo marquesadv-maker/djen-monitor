@@ -7,6 +7,7 @@ import json
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from urllib.parse import quote
 
@@ -137,70 +138,92 @@ _DJEN_HEADERS = {
 }
 
 
+def _buscar_tribunal(trib: str, data_inicio: str, data_fim: str,
+                     numero_oab: str, uf_oab: str, nome_advogado: str) -> tuple:
+    """Busca publicações de um único tribunal — roda em thread paralela."""
+    itens_trib = []
+    erros_trib = []
+    pagina = 1
+    while True:
+        params = {
+            "pagina": pagina,
+            "itensPorPagina": 20,
+            "meio": "D",
+            "tribunal": trib,
+            "dataDisponibilizacaoInicio": data_inicio,
+            "dataDisponibilizacaoFim": data_fim,
+            "numeroOab": numero_oab,
+            "ufOab": uf_oab,
+        }
+        if nome_advogado:
+            params["nomeAdvogado"] = nome_advogado
+
+        tentativas = 0
+        resp = None
+        while tentativas < 3:
+            try:
+                resp = requests.get(f"{DJEN_BASE_URL}/comunicacao",
+                                    params=params, headers=_DJEN_HEADERS,
+                                    timeout=20)
+                if resp.status_code == 403:
+                    resp = None
+                    break
+                if resp.status_code == 503:
+                    time.sleep(3)
+                    tentativas += 1
+                    continue
+                resp.raise_for_status()
+                break
+            except requests.exceptions.RequestException as e:
+                tentativas += 1
+                if tentativas >= 3:
+                    erros_trib.append(f"{trib}/p{pagina}: {str(e)[:80]}")
+                    resp = None
+                else:
+                    time.sleep(2)
+
+        if resp is None:
+            break
+
+        try:
+            dados = resp.json()
+        except Exception:
+            break
+
+        itens = dados.get("items", []) if isinstance(dados, dict) else dados
+        if not itens:
+            break
+
+        for item in itens:
+            item["_tribunal"] = trib
+            item["_classificacao"] = classificar(item)
+
+        itens_trib.extend(itens)
+        if len(itens) < 20:
+            break
+        pagina += 1
+
+    return itens_trib, erros_trib
+
+
 def buscar_djen(data_inicio: str, data_fim: str, tribunais: list,
                 numero_oab: str, uf_oab: str, nome_advogado: str = "") -> tuple:
     todas = []
     erros = []
 
-    for trib in tribunais:
-        pagina = 1
-        while True:
-            params = {
-                "pagina": pagina,
-                "itensPorPagina": 20,
-                "meio": "D",
-                "tribunal": trib,
-                "dataDisponibilizacaoInicio": data_inicio,
-                "dataDisponibilizacaoFim": data_fim,
-                "numeroOab": numero_oab,
-                "ufOab": uf_oab,
-            }
-            if nome_advogado:
-                params["nomeAdvogado"] = nome_advogado
-
-            tentativas = 0
-            while tentativas < 3:
-                try:
-                    resp = requests.get(f"{DJEN_BASE_URL}/comunicacao",
-                                        params=params, headers=_DJEN_HEADERS,
-                                        timeout=30)
-                    if resp.status_code == 403:
-                        resp = None
-                        break
-                    if resp.status_code == 503:
-                        time.sleep(5)
-                        tentativas += 1
-                        continue
-                    resp.raise_for_status()
-                    break
-                except requests.exceptions.RequestException as e:
-                    tentativas += 1
-                    if tentativas >= 3:
-                        erros.append(f"{trib}/p{pagina}: {str(e)[:80]}")
-                        resp = None
-                    else:
-                        time.sleep(3)
-
-            if resp is None:
-                break
-
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futuros = {
+            pool.submit(_buscar_tribunal, trib, data_inicio, data_fim,
+                        numero_oab, uf_oab, nome_advogado): trib
+            for trib in tribunais
+        }
+        for fut in as_completed(futuros):
             try:
-                dados = resp.json()
-            except:
-                break
-
-            itens = dados.get("items", []) if isinstance(dados, dict) else dados
-            if not itens:
-                break
-
-            for item in itens:
-                item["_tribunal"] = trib
-                item["_classificacao"] = classificar(item)
-
-            todas.extend(itens)
-            if len(itens) < 20:
-                break
-            pagina += 1
+                itens, errs = fut.result()
+                todas.extend(itens)
+                erros.extend(errs)
+            except Exception as e:
+                erros.append(f"{futuros[fut]}: {str(e)[:80]}")
 
     return todas, erros
 
@@ -435,10 +458,18 @@ def buscar():
     # 3. Deduplicar
     publicacoes = deduplicar(publicacoes)
 
-    # 4. Cruzar com Projuris
-    resultados = []
-    processos_cache = {}
+    # 4. Cruzar com Projuris — buscar números únicos em paralelo
+    numeros_unicos = list({extrair_numero(p) for p in publicacoes if extrair_numero(p)})
 
+    processos_cache = {}
+    def _verificar(num):
+        return num, verificar_projuris(token, num)
+
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        for num, proj in pool.map(_verificar, numeros_unicos):
+            processos_cache[num] = proj
+
+    resultados = []
     for pub in publicacoes:
         num = extrair_numero(pub)
         polo_ativo, polo_passivo = extrair_partes(pub)
@@ -447,10 +478,7 @@ def buscar():
         texto_limpo = re.sub(r"\s+", " ", texto_limpo)
         prazo = extrair_prazo(texto_limpo)
 
-        # Cache para não repetir consulta do mesmo processo
-        if num not in processos_cache:
-            processos_cache[num] = verificar_projuris(token, num)
-        proj = processos_cache[num]
+        proj = processos_cache.get(num, {"encontrado": False, "status": "SEM_NUMERO"})
 
         cls = pub.get("_classificacao", "INFORMATIVA")
         if not proj["encontrado"]:
