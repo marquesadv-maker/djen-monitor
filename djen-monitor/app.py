@@ -162,7 +162,7 @@ def buscar_djen(data_inicio: str, data_fim: str, tribunais: list,
 
         tentativas = 0
         resp = None
-        while tentativas < 3:
+        while tentativas < 4:
             try:
                 resp = requests.get(f"{DJEN_BASE_URL}/comunicacao",
                                     params=params, headers=_DJEN_HEADERS,
@@ -170,19 +170,27 @@ def buscar_djen(data_inicio: str, data_fim: str, tribunais: list,
                 if resp.status_code in (403, 404):
                     erros.append(f"DJEN bloqueou acesso (HTTP {resp.status_code})")
                     return todas, erros
-                if resp.status_code == 503:
-                    time.sleep(3)
+                if resp.status_code in (500, 502, 503, 504):
+                    corpo = ""
+                    try:
+                        corpo = ": " + resp.text[:300]
+                    except Exception:
+                        pass
                     tentativas += 1
+                    if tentativas >= 4:
+                        erros.append(f"DJEN HTTP {resp.status_code}{corpo}")
+                        return todas, erros
+                    time.sleep(5 * tentativas)
                     continue
                 resp.raise_for_status()
                 break
             except requests.exceptions.RequestException as e:
                 tentativas += 1
-                if tentativas >= 3:
+                if tentativas >= 4:
                     erros.append(f"DJEN p{pagina}: {str(e)[:80]}")
                     resp = None
                 else:
-                    time.sleep(2)
+                    time.sleep(3)
 
         if resp is None:
             break
@@ -644,11 +652,18 @@ def teste():
                     "numeroOab": "2265", "ufOab": "TO"},
             headers=_DJEN_HEADERS, timeout=20
         )
+        erro_djen = None
+        if resp.status_code not in (200,):
+            try:
+                erro_djen = resp.json()
+            except Exception:
+                erro_djen = resp.text[:200]
         resultado["djen"] = {
             "status": resp.status_code,
             "ok": resp.status_code == 200,
             "total": len(resp.json().get("items", [])) if resp.status_code == 200 else 0,
-            "erro": None,
+            "erro": erro_djen,
+            "mensagem": "DJEN indisponível temporariamente. Tente novamente em alguns minutos." if resp.status_code in (500, 502, 503, 504) else None,
         }
     except Exception as e:
         resultado["djen"] = {"ok": False, "erro": str(e)}
