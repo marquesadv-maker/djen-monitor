@@ -543,6 +543,58 @@ def ping():
     return jsonify({"ok": True, "ts": datetime.now().isoformat()})
 
 
+@app.route("/api/teste", methods=["POST"])
+def teste():
+    """Diagnóstico rápido: testa DJEN + Projuris e retorna erros detalhados."""
+    dados = request.json or {}
+    senha = dados.get("senha", "")
+    resultado = {}
+
+    # Teste DJEN
+    try:
+        resp = requests.get(
+            f"{DJEN_BASE_URL}/comunicacao",
+            params={"pagina": 1, "itensPorPagina": 1, "meio": "D",
+                    "tribunal": "TRT10", "dataDisponibilizacaoInicio": "2025-03-10",
+                    "dataDisponibilizacaoFim": "2025-03-10",
+                    "numeroOab": "2265", "ufOab": "TO"},
+            headers=_DJEN_HEADERS, timeout=20
+        )
+        resultado["djen"] = {
+            "status": resp.status_code,
+            "ok": resp.status_code == 200,
+            "total": len(resp.json().get("items", [])) if resp.status_code == 200 else 0,
+            "erro": None,
+        }
+    except Exception as e:
+        resultado["djen"] = {"ok": False, "erro": str(e)}
+
+    # Teste Projuris auth
+    if senha:
+        try:
+            token = autenticar_projuris(senha)
+            resultado["projuris_auth"] = {"ok": True, "token_len": len(token)}
+
+            # Teste busca de processo
+            try:
+                r = projuris_post(token, "v2/processo/consulta",
+                                  {"pagina": 0, "tamanhoPagina": 1})
+                resultado["projuris_busca"] = {
+                    "ok": "_api_error" not in r,
+                    "chaves": list(r.keys())[:5],
+                    "erro": r.get("_api_error"),
+                }
+            except Exception as e:
+                resultado["projuris_busca"] = {"ok": False, "erro": str(e)}
+
+        except Exception as e:
+            resultado["projuris_auth"] = {"ok": False, "erro": str(e)}
+    else:
+        resultado["projuris_auth"] = {"ok": False, "erro": "senha não informada"}
+
+    return jsonify(resultado)
+
+
 
 @app.route("/api/debug-projuris", methods=["POST"])
 def debug_projuris():
