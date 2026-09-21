@@ -1,0 +1,4 @@
+{
+  "_leia_me": "Hash da senha-chave de acesso ao Ambiente Financeiro inteiro — nunca a senha em texto puro. Gerado com werkzeug.security.generate_password_hash. Para trocar a senha: gere um novo hash (python -c \"from werkzeug.security import generate_password_hash as g; print(g('nova-senha'))\") e substitua o valor abaixo.",
+  "hash": "scrypt:32768:8:1$f4YhWkPvlc2smQag$255230447012f97f69b89f5cbcfedd51c246e25c95985f9edf8aede4751df1770b880c63fc354d1477ad2ea600fbe958d88203540d5d8464facc0475c2ff6394"
+}

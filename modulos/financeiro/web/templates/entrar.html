@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar — Marques Advogados</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('financeiro_web.static', filename='financeiro.css') }}">
+  <style>
+    /* Página autônoma, fora do layout com barra/abas de base.html: quem
+       está aqui ainda não passou da senha-chave, então não há navegação
+       nem identidade de usuário para mostrar. */
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .tela-entrada { width: 100%; max-width: 360px; padding: 0 16px; }
+    .tela-entrada .marca { display: flex; flex-direction: column; align-items: center;
+                           gap: 10px; margin-bottom: 22px; text-align: center; }
+    .tela-entrada .marca img { height: 42px; width: auto; }
+    .tela-entrada .marca .nome { color: var(--marrom); font-weight: 700; font-size: 15px; }
+    .tela-entrada .marca .nome small { display: block; font-weight: 500;
+                                       color: var(--texto-fraco); font-size: 12px; margin-top: 2px; }
+    .tela-entrada .bloco { margin-bottom: 0; }
+    .tela-entrada button { width: 100%; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="tela-entrada">
+    <div class="marca">
+      <img src="{{ url_for('financeiro_web.static', filename='img/simbolo-m-dourado.png') }}" alt="Marques Advogados">
+      <span class="nome">MARQUES ADVOGADOS<small>Ambiente Financeiro</small></span>
+    </div>
+    <div class="bloco">
+      <h2>Senha de acesso</h2>
+      {% if erro %}<div class="erro-bloco">{{ erro }}</div>{% endif %}
+      <form method="post">
+        <div class="campo">
+          <label for="senha">Senha</label>
+          <input type="password" id="senha" name="senha" autofocus required autocomplete="current-password">
+        </div>
+        <button type="submit">Entrar</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -24,7 +24,7 @@ from typing import Any, Iterator
 RAIZ = Path(__file__).resolve().parent.parent
 CAMINHO_PADRAO = RAIZ / "dados" / "auditoria" / "financeiro.jsonl"
 
-ABAS = ("conciliacao", "nfse")
+ABAS = ("conciliacao", "nfse", "acesso")
 RESULTADOS = ("sucesso", "falha", "simulado", "recusado", "bloqueado")
 
 _trava = threading.Lock()
@@ -45,6 +45,8 @@ def registrar(*, aba: str, usuario: str, acao: str, resultado: str,
     - conciliação: lançamento, título, valor, confiança, regra
     - NFS-e: tarefa de origem, tomador, valor, RPS (número/série),
       NFS-e (número/código de verificação) e **ambiente**
+    - acesso: tentativa de entrada na senha-chave do módulo (sem a senha
+      em si, nunca)
 
     O campo ambiente é o que separa nota de teste de nota real quando o
     log for revisto meses depois — por isso a aba nfse deve sempre enviá-lo.
