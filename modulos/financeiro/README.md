@@ -38,8 +38,9 @@ Atalho, na própria pasta do módulo:
 - Windows: `iniciar_financeiro.bat`
 - Linux/macOS e servidor: `./iniciar_financeiro.sh`
 
-Os dois pedem o e-mail do usuário, instalam as dependências e abrem o serviço
-em <http://localhost:8010/financeiro>.
+Os dois pedem o e-mail do usuário, instalam as dependências, sobem o serviço
+e **abrem o navegador sozinhos** assim que ele responder em
+<http://localhost:8010/financeiro> — sem precisar digitar o endereço.
 
 Na mão, se preferir:
 
