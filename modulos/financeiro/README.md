@@ -33,6 +33,16 @@ pode gravar no lugar errado ou devolver 404 silencioso que parece sucesso.
 
 ## Como rodar
 
+Atalho, na própria pasta do módulo:
+
+- Windows: `iniciar_financeiro.bat`
+- Linux/macOS e servidor: `./iniciar_financeiro.sh`
+
+Os dois pedem o e-mail do usuário, instalam as dependências e abrem o serviço
+em <http://localhost:8010/financeiro>.
+
+Na mão, se preferir:
+
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r modulos/financeiro/requirements.txt
@@ -68,8 +78,9 @@ condições valem juntas, para que ninguém destrave o módulo por engano.
 
 ## Permissões
 
-Padrão **negar**, em `config/permissoes.json`. A lista está vazia de
-propósito — é definida pela responsável pelo financeiro, não presumida aqui:
+Padrão **negar**, em `config/permissoes.json`. Hoje a lista tem uma única
+entrada, a do responsável, para o primeiro acesso; quem mais entra e com qual
+nível é decisão dele, não presunção do módulo:
 
 ```json
 {
