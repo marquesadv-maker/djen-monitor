@@ -22,6 +22,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, make_response, render_template, request
 
 from ...shared import auditoria, modo, sessao
+from ...shared.formatacao import brl
 from ...shared.permissoes import exigir, identificar, resumo_acesso
 from .leitor_tarefas import TarefaNF, ler_tarefas
 from .rps_builder import (Prestador, Servico, Tomador, alertas_sigilo,
@@ -68,11 +69,6 @@ def montar_prestador() -> Prestador:
         incentivador_cultural=bool(cfg.get("incentivador_cultural")),
         regime_especial=cfg.get("regime_especial", ""),
     )
-
-
-def brl(centavos: int) -> str:
-    inteiro = f"{abs(centavos) / 100:,.2f}".replace(",", "~").replace(".", ",").replace("~", ".")
-    return f"{'-' if centavos < 0 else ''}R$ {inteiro}"
 
 
 def estado_sessao() -> tuple[dict, str]:

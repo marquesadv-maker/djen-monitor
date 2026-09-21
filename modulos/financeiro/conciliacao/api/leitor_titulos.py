@@ -19,8 +19,8 @@ import io
 from dataclasses import dataclass, field
 from datetime import date
 
-from .leitor_extrato import (_converter_data, _decodificar, _detectar_separador,
-                             _numerico)
+from .leitor_extrato import (_celula, _converter_data, _decodificar,
+                             _detectar_separador, _numerico)
 from .motor_conciliacao import Titulo, normalizar_texto, parse_valor_br
 
 CABECALHOS = {
@@ -51,8 +51,6 @@ OPCIONAIS = ("banco", "forma_pagamento", "categoria")
 RECEBER = ("receber", "recebimento", "receita", "entrada", "credito", "r")
 PAGAR = ("pagar", "pagamento", "despesa", "saida", "debito", "p")
 
-ABERTOS = ("aberto", "em aberto", "pendente", "a receber", "a pagar",
-           "nao pago", "vencido", "a vencer", "previsto")
 PAGOS = ("pago", "baixado", "liquidado", "quitado", "recebido", "conciliado")
 CANCELADOS = ("cancelado", "estornado", "inativo")
 
@@ -137,37 +135,37 @@ def ler_titulos(conteudo: bytes, nome_arquivo: str = "",
         if not any(str(c).strip() for c in bruta):
             continue
 
-        vencimento = _converter_data(_col(bruta, indices.get("vencimento")))
+        vencimento = _converter_data(_celula(bruta, indices.get("vencimento")))
         if vencimento is None:
             resultado._ignorar("sem vencimento válido")
             continue
 
-        bruto_valor = _col(bruta, indices.get("valor"))
+        bruto_valor = _celula(bruta, indices.get("valor"))
         if not _numerico(bruto_valor):
             resultado._ignorar("valor não numérico")
             continue
         valor = abs(parse_valor_br(bruto_valor))
 
-        tipo = _classificar_tipo(_col(bruta, indices.get("tipo")), tipo_padrao)
+        tipo = _classificar_tipo(_celula(bruta, indices.get("tipo")), tipo_padrao)
         if not tipo:
             resultado._ignorar("tipo indefinido")
             continue
 
-        identificador = (_col(bruta, indices.get("id"))
+        identificador = (_celula(bruta, indices.get("id"))
                          or f"T{len(resultado.titulos) + 1:05d}")
         resultado.extras[identificador] = {
-            campo: _col(bruta, indices.get(campo))
+            campo: _celula(bruta, indices.get(campo))
             for campo in OPCIONAIS if campo in indices
         }
         resultado.titulos.append(Titulo(
             id=identificador,
             tipo=tipo,
-            descricao=_col(bruta, indices.get("descricao")),
-            contraparte=_col(bruta, indices.get("contraparte")),
+            descricao=_celula(bruta, indices.get("descricao")),
+            contraparte=_celula(bruta, indices.get("contraparte")),
             valor_centavos=valor,
             vencimento=vencimento,
-            documento=_col(bruta, indices.get("documento")),
-            status=_classificar_status(_col(bruta, indices.get("status"))),
+            documento=_celula(bruta, indices.get("documento")),
+            status=_classificar_status(_celula(bruta, indices.get("status"))),
         ))
 
     if "documento" not in indices:
@@ -231,12 +229,6 @@ def _localizar_cabecalho(tabela: list[list[str]]) -> tuple[int, dict[str, int]]:
     return melhor_linha, melhores
 
 
-def _col(linha: list[str], indice: int | None) -> str:
-    if indice is None or indice >= len(linha):
-        return ""
-    return str(linha[indice]).strip()
-
-
 def _classificar_tipo(bruto: str, padrao: str) -> str:
     alvo = normalizar_texto(bruto)
     if alvo:
@@ -249,18 +241,20 @@ def _classificar_tipo(bruto: str, padrao: str) -> str:
 
 def _classificar_status(bruto: str) -> str:
     """Status desconhecido vira 'aberto' e o aviso correspondente é emitido:
-    tratar um título já baixado como aberto é o caminho da dupla baixa."""
+    tratar um título já baixado como aberto é o caminho da dupla baixa.
+
+    É por isso que não há ramo para "aberto"/"pendente"/etc.: qualquer
+    valor que não seja reconhecido como cancelado, pago ou parcial já cai
+    no mesmo resultado pelo padrão abaixo — um teste à parte só repetiria
+    o fallback sem mudar o que ele devolve.
+    """
     alvo = normalizar_texto(bruto)
-    if not alvo:
-        return "aberto"
     if any(alvo.startswith(p) for p in CANCELADOS):
         return "cancelado"
     if any(alvo.startswith(p) for p in PAGOS):
         return "pago"
     if "parcial" in alvo:
         return "parcial"
-    if any(alvo.startswith(p) for p in ABERTOS):
-        return "aberto"
     return "aberto"
 
 

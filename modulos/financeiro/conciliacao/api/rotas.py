@@ -21,8 +21,9 @@ from flask import (Blueprint, jsonify, make_response, render_template,
                    request)
 
 from ...shared import auditoria, modo, sessao
+from ...shared.formatacao import brl
 from ...shared.permissoes import exigir, identificar, resumo_acesso
-from .agregador import Filtros, brl, montar_painel, pct
+from .agregador import Filtros, montar_painel, pct
 from .leitor_extrato import (chave_reimportacao, detectar_reimportacao,
                              ler_extrato)
 from .leitor_titulos import ler_titulos
@@ -139,6 +140,27 @@ def _resultado_json(resultado, aprovados: dict) -> dict:
         "tipo_divergencia": resultado.tipo_divergencia,
         "candidatos": [_titulo_json(t) for t in resultado.candidatos],
         "aprovado": lanc.id in aprovados,
+    }
+
+
+def _resposta_conciliacao(resultados: list, aprovados: dict, regras: dict) -> dict:
+    """Corpo comum de `/api/conciliar` e `/api/resultados`: resumo com
+    valores em reais + os três blocos, cada um com o porquê do match."""
+    resumo = resumir(resultados)
+    return {
+        "resumo": {
+            **resumo,
+            "automatico_valor": brl(resumo["automatico"]["valor_centavos"]),
+            "sugestao_valor": brl(resumo["sugestao"]["valor_centavos"]),
+            "divergencia_valor": brl(resumo["divergencia"]["valor_centavos"]),
+        },
+        "regras": regras,
+        "automatico": [_resultado_json(r, aprovados) for r in resultados
+                       if r.status == "automatico"],
+        "sugestao": [_resultado_json(r, aprovados) for r in resultados
+                     if r.status == "sugestao"],
+        "divergencia": [_resultado_json(r, aprovados) for r in resultados
+                        if r.status == "divergencia"],
     }
 
 
@@ -379,22 +401,8 @@ def api_conciliar():
                             if not k.startswith("_")}},
     )
 
-    aprovados = estado["aprovados"]
-    return responder({
-        "resumo": {
-            **resumo,
-            "automatico_valor": brl(resumo["automatico"]["valor_centavos"]),
-            "sugestao_valor": brl(resumo["sugestao"]["valor_centavos"]),
-            "divergencia_valor": brl(resumo["divergencia"]["valor_centavos"]),
-        },
-        "regras": regras,
-        "automatico": [_resultado_json(r, aprovados) for r in resultados
-                       if r.status == "automatico"],
-        "sugestao": [_resultado_json(r, aprovados) for r in resultados
-                     if r.status == "sugestao"],
-        "divergencia": [_resultado_json(r, aprovados) for r in resultados
-                        if r.status == "divergencia"],
-    }, chave)
+    return responder(
+        _resposta_conciliacao(resultados, estado["aprovados"], regras), chave)
 
 
 @bp.get("/api/resultados")
@@ -410,22 +418,9 @@ def api_resultados():
     if not resultados:
         return responder({"conciliado": False}, chave)
 
-    resumo = resumir(resultados)
     return responder({
         "conciliado": True,
-        "resumo": {
-            **resumo,
-            "automatico_valor": brl(resumo["automatico"]["valor_centavos"]),
-            "sugestao_valor": brl(resumo["sugestao"]["valor_centavos"]),
-            "divergencia_valor": brl(resumo["divergencia"]["valor_centavos"]),
-        },
-        "regras": carregar_regras(),
-        "automatico": [_resultado_json(r, aprovados) for r in resultados
-                       if r.status == "automatico"],
-        "sugestao": [_resultado_json(r, aprovados) for r in resultados
-                     if r.status == "sugestao"],
-        "divergencia": [_resultado_json(r, aprovados) for r in resultados
-                        if r.status == "divergencia"],
+        **_resposta_conciliacao(resultados, aprovados, carregar_regras()),
     }, chave)
 
 

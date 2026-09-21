@@ -32,6 +32,13 @@ TOLERANCIA_VALOR_PCT = 2.0
 LIMIAR_AUTOMATICO = 90
 LIMIAR_SUGESTAO = 70
 
+# Abaixo disso, R3 (80) e R4 (75) passariam a entrar no automático, e
+# nenhuma das duas tem força para justificar baixa sem olho humano — ver
+# references/conciliacao/motor-matching.md. `conciliar()` impõe este piso
+# por conta própria: quem chamar o motor direto (sem passar por rotas.py)
+# tem a mesma garantia, não só quem entra pela API HTTP.
+LIMIAR_MINIMO_AUTOMATICO = 85
+
 RUIDO_BANCARIO = {
     "ted", "pix", "doc", "transf", "transferencia", "pgto", "pagto",
     "pagamento", "receb", "recebimento", "cred", "credito", "deb",
@@ -164,6 +171,14 @@ def _similaridade_tokens(texto_a: str, texto_b: str) -> float:
 
 
 def _fmt(centavos: int) -> str:
+    """Valor absoluto formatado — sem sinal de propósito.
+
+    As frases que chamam `_fmt` para uma diferença (não para um valor
+    exato) sempre acompanham o número de uma palavra que já diz a direção
+    ("a menos"/"a mais"): um sinal de "-" na frente seria redundante ali.
+    Por isso não é o mesmo formatador de `shared/formatacao.py`, que
+    mostra sinal — são usos diferentes, não uma duplicata a unificar.
+    """
     s = f"{abs(centavos) / 100:,.2f}".replace(",", "~").replace(".", ",").replace("~", ".")
     return f"R$ {s}"
 
@@ -191,9 +206,10 @@ def pontuar(lanc: Lancamento, tit: Titulo,
             return 98, "R1 — documento e valor exatos", (
                 f"Documento {tit.documento} confere e o valor é idêntico ({_fmt(valor_lanc)})."
             )
+        sentido = "a menos" if dif_valor < 0 else "a mais"
         return 95, "R1 — documento exato", (
             f"Documento {tit.documento} confere. "
-            f"Diferença de valor: {_fmt(dif_valor)}."
+            f"O lançamento veio {_fmt(dif_valor)} {sentido} que o título."
         )
 
     # R1b — mesma raiz de CNPJ
@@ -277,6 +293,7 @@ def conciliar(lancamentos: list[Lancamento],
     é o que faz duplicidade aparecer como divergência em vez de virar
     dois matches sobre o mesmo título.
     """
+    limiar_auto = max(limiar_auto, LIMIAR_MINIMO_AUTOMATICO)
     resultados: list[Resultado] = []
     titulos_usados: set[str] = set()
 

@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from datetime import date
 from xml.etree.ElementTree import Element, SubElement, tostring
 
+from ...shared.formatacao import brl
+
 NAMESPACE = "http://www.abrasf.org.br/nfse.xsd"
 IBGE_ARAGUAINA = "1702109"
 
@@ -346,10 +348,6 @@ def _doc_element(documento: str) -> Element:
 def previa(prestador: Prestador, tomador: Tomador, servico: Servico,
            origem: str = "") -> str:
     """Texto da prévia que o advogado confere antes de aprovar."""
-    def brl(centavos: int) -> str:
-        s = f"{centavos / 100:,.2f}".replace(",", "~").replace(".", ",").replace("~", ".")
-        return f"R$ {s}"
-
     if servico.regime_fixo_declarado:
         iss = "regime fixo por profissional (declarado)"
     elif servico.aliquota_iss is None:

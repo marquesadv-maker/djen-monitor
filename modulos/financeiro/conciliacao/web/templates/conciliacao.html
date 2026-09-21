@@ -63,5 +63,6 @@
 
 {% block scripts %}
 <script>window.NIVEL_CONCILIACAO = "{{ acesso.niveis.conciliacao }}";</script>
+<script src="{{ url_for('conciliacao.static', filename='comum.js') }}"></script>
 <script src="{{ url_for('conciliacao.static', filename='conciliacao.js') }}"></script>
 {% endblock %}

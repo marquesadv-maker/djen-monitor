@@ -2,7 +2,9 @@
    no Projuris; a conciliação e a baixa vivem na aba ao lado.
 
    Os gráficos são SVG próprio, sem biblioteca externa: o painel roda numa
-   rede interna e não depende de CDN para desenhar. */
+   rede interna e não depende de CDN para desenhar.
+
+   `pedir`/`escapar` vêm de comum.js, carregado antes deste arquivo. */
 
 const CORES = {
   entrada: '#0C0E34',
@@ -40,13 +42,10 @@ function filtrosAtuais() {
 async function carregar() {
   let dados;
   try {
-    const resposta = await fetch(`/financeiro/conciliacao/api/painel?${filtrosAtuais()}`,
-      { credentials: 'same-origin' });
-    dados = await resposta.json();
-    if (!resposta.ok) throw new Error(dados.mensagem || dados.erro || 'falha');
-  } catch (erro) {
+    dados = await pedir(`/painel?${filtrosAtuais()}`);
+  } catch (falha) {
     document.getElementById('kpis').innerHTML =
-      `<div class="kpi"><div class="rotulo">Erro</div><div class="nota">${erro.message}
+      `<div class="kpi"><div class="rotulo">Erro</div><div class="nota">${falha.message}
        — tente recarregar a página.</div></div>`;
     return;
   }
@@ -277,12 +276,6 @@ function reais(centavos) {
   if (valor >= 1000000) return `R$ ${(valor / 1000000).toFixed(1).replace('.', ',')} Mi`;
   return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2,
     maximumFractionDigits: 2 })}`;
-}
-
-function escapar(texto) {
-  const div = document.createElement('div');
-  div.textContent = texto ?? '';
-  return div.innerHTML;
 }
 
 // ── Início ───────────────────────────────────────────────────────────

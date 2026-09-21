@@ -3,29 +3,10 @@
    Cada item mostra o porquê do match, não só a porcentagem: é o que o
    usuário precisa para defender a baixa depois. A gravação é item a item
    e, enquanto houver pendência de implantação, a resposta do servidor é
-   uma simulação — a tela diz isso em vez de fingir que gravou. */
+   uma simulação — a tela diz isso em vez de fingir que gravou.
 
-const BASE = '/financeiro/conciliacao/api';
-
-async function pedir(caminho, opcoes = {}) {
-  const resposta = await fetch(`${BASE}${caminho}`,
-    { credentials: 'same-origin', ...opcoes });
-  const dados = await resposta.json().catch(() => ({}));
-  if (!resposta.ok) {
-    throw new Error(dados.erro || dados.mensagem || `Falha (${resposta.status}).`);
-  }
-  return dados;
-}
-
-function escapar(texto) {
-  const div = document.createElement('div');
-  div.textContent = texto ?? '';
-  return div.innerHTML;
-}
-
-function aviso(texto) { return `<div class="aviso">${escapar(texto)}</div>`; }
-function erro(texto) { return `<div class="erro-bloco">${escapar(texto)}</div>`; }
-function ok(texto) { return `<div class="ok-bloco">${escapar(texto)}</div>`; }
+   `pedir`/`escapar`/`aviso`/`erro`/`ok` vêm de comum.js, carregado antes
+   deste arquivo pelo template. */
 
 // ── Importação ───────────────────────────────────────────────────────
 
@@ -72,14 +53,19 @@ async function conciliar() {
   resumo.innerHTML = '<div class="bloco"><div class="esqueleto"></div>'
     + '<div class="esqueleto" style="width:60%"></div></div>';
   try {
-    const dados = await pedir('/conciliar', { method: 'POST' });
-    mostrarResumo(dados);
-    preencherBloco('automatico', dados.automatico);
-    preencherBloco('sugestao', dados.sugestao);
-    preencherBloco('divergencia', dados.divergencia);
+    mostrarResultados(await pedir('/conciliar', { method: 'POST' }));
   } catch (e) {
     resumo.innerHTML = `<div class="bloco">${erro(e.message)}</div>`;
   }
+}
+
+// Preenche resumo + os três blocos a partir do resultado da conciliação —
+// tanto de uma conciliação recém-rodada quanto de uma sessão restaurada.
+function mostrarResultados(dados) {
+  mostrarResumo(dados);
+  preencherBloco('automatico', dados.automatico);
+  preencherBloco('sugestao', dados.sugestao);
+  preencherBloco('divergencia', dados.divergencia);
 }
 
 function mostrarResumo(dados) {
@@ -225,11 +211,7 @@ document.getElementById('limpar').addEventListener('click', async () => {
 (async function restaurar() {
   try {
     const dados = await pedir('/resultados');
-    if (!dados.conciliado) return;
-    mostrarResumo(dados);
-    preencherBloco('automatico', dados.automatico);
-    preencherBloco('sugestao', dados.sugestao);
-    preencherBloco('divergencia', dados.divergencia);
+    if (dados.conciliado) mostrarResultados(dados);
   } catch (e) {
     /* sessão nova ou sem permissão de leitura: a tela fica no estado inicial */
   }

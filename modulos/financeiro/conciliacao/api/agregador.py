@@ -259,19 +259,5 @@ def _ranking(conciliados: list[Resultado], tipo: str, teto: int) -> list[dict]:
 # Formatação (usada também pelas respostas em texto)
 # --------------------------------------------------------------------------
 
-def brl(centavos: int | None, abreviar: bool = False) -> str:
-    """`R$ 1.234.567,89`. Abreviação só acima de 1 milhão, quando pedida."""
-    if centavos is None:
-        return "—"
-    negativo = centavos < 0
-    valor = abs(centavos) / 100
-    if abreviar and valor >= 1_000_000:
-        texto = f"R$ {valor / 1_000_000:.1f} Mi".replace(".", ",")
-    else:
-        inteiro = f"{valor:,.2f}".replace(",", "~").replace(".", ",").replace("~", ".")
-        texto = f"R$ {inteiro}"
-    return f"-{texto}" if negativo else texto
-
-
 def pct(valor: float | None) -> str:
     return "—" if valor is None else f"{valor:.1f}".replace(".", ",") + "%"

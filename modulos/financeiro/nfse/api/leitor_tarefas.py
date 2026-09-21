@@ -21,6 +21,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+from .rps_builder import so_digitos
+
 CABECALHOS = {
     "tarefa": ("tarefa", "id tarefa", "codigo tarefa", "id", "codigo",
                "numero tarefa"),
@@ -129,7 +131,7 @@ def ler_tarefas(conteudo: bytes, nome_arquivo: str = "") -> ResultadoTarefas:
         if not any(str(c).strip() for c in bruta):
             continue
 
-        documento = re.sub(r"\D", "", _col(bruta, indices.get("tomador_documento")))
+        documento = so_digitos(_col(bruta, indices.get("tomador_documento")))
         valor = _centavos(_col(bruta, indices.get("valor")))
         if not documento and valor == 0:
             resultado.ignoradas += 1

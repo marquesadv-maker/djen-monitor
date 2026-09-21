@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from ..conciliacao.api.agregador import Filtros, brl, montar_painel, pct
+from ..conciliacao.api.agregador import Filtros, montar_painel, pct
+from ..shared.formatacao import brl
 from ..conciliacao.api.motor_conciliacao import (Lancamento, Titulo, conciliar)
 
 
