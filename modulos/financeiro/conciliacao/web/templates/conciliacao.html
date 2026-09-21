@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% set pagina = 'conciliacao' %}
+{% block titulo %}Conciliação bancária{% endblock %}
+
+{% block conteudo %}
+
+<div class="bloco">
+  <h2>1. Arquivos</h2>
+  <div class="grade-2">
+    <div>
+      <div class="campo">
+        <label for="arquivo-extrato">Extrato bancário (OFX, CSV ou XLSX)</label>
+        <input type="file" id="arquivo-extrato" accept=".ofx,.ofc,.csv,.txt,.xlsx,.xlsm">
+      </div>
+      <button id="enviar-extrato" type="button">Importar extrato</button>
+      <div id="estado-extrato" style="margin-top:10px"></div>
+    </div>
+    <div>
+      <div class="campo">
+        <label for="arquivo-titulos">Títulos exportados do Projuris (CSV ou XLSX)</label>
+        <input type="file" id="arquivo-titulos" accept=".csv,.txt,.xlsx,.xlsm">
+      </div>
+      <div class="campo">
+        <label for="tipo-titulos">Tipo, se o arquivo não tiver coluna própria</label>
+        <select id="tipo-titulos">
+          <option value="">O arquivo informa</option>
+          <option value="receber">Contas a receber</option>
+          <option value="pagar">Contas a pagar</option>
+        </select>
+      </div>
+      <button id="enviar-titulos" type="button">Importar títulos</button>
+      <div id="estado-titulos" style="margin-top:10px"></div>
+    </div>
+  </div>
+  <p style="margin-top:14px">
+    <button id="conciliar" type="button">Conciliar</button>
+    <button id="limpar" class="secundario" type="button">Descartar arquivos da sessão</button>
+  </p>
+  <p class="meta" style="font-size:12px;color:rgba(27,42,74,.7)">
+    Extrato e títulos ficam apenas na memória do servidor enquanto esta sessão
+    estiver aberta. Nada é gravado em disco nem versionado.
+  </p>
+</div>
+
+<div id="resumo"></div>
+
+<div class="bloco" id="bloco-automatico" hidden>
+  <h2>Conciliado automaticamente <span id="conta-automatico"></span></h2>
+  <div id="lista-automatico"></div>
+</div>
+
+<div class="bloco" id="bloco-sugestao" hidden>
+  <h2>Sugestões para aprovação <span id="conta-sugestao"></span></h2>
+  <div id="lista-sugestao"></div>
+</div>
+
+<div class="bloco" id="bloco-divergencia" hidden>
+  <h2>Divergências <span id="conta-divergencia"></span></h2>
+  <div id="lista-divergencia"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>window.NIVEL_CONCILIACAO = "{{ acesso.niveis.conciliacao }}";</script>
+<script src="{{ url_for('conciliacao.static', filename='conciliacao.js') }}"></script>
+{% endblock %}

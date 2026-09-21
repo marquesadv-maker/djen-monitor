@@ -1,0 +1,8 @@
+{
+  "_leia_me": "URLs do web service WebISS de Araguaína. NÃO ADIVINHAR: obter da Secretaria Municipal da Fazenda junto com a liberação de homologação (references/nfse/webiss-araguaina.md). Enquanto estiverem vazias, a transmissão fica bloqueada.",
+  "homologacao": {"url": "", "confirmado_em": "", "origem": ""},
+  "producao": {"url": "", "confirmado_em": "", "origem": ""},
+  "certificado_pfx": "/etc/marquespro/certificados/ecnpj-sociedade.pfx",
+  "senha_certificado_env": "FINANCEIRO_CERT_SENHA",
+  "ambiente_padrao": "homologacao"
+}

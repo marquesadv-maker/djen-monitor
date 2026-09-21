@@ -1,0 +1,19 @@
+{
+  "_leia_me": "Cadastro fiscal do escritório. Campo vazio bloqueia a emissão — isso é proposital: nota com enquadramento errado gera passivo tributário. Preencher com o contador e registrar a data da confirmação em 'confirmado_em' e a origem em 'confirmado_por'.",
+  "cnpj": "",
+  "inscricao_municipal": "",
+  "razao_social": "Marques Advogados S/S",
+  "regime_tributario": "",
+  "optante_simples": null,
+  "incentivador_cultural": false,
+  "regime_especial": "",
+  "item_lc116_padrao": "",
+  "aliquota_iss": null,
+  "regime_fixo_por_profissional": null,
+  "natureza_operacao": "",
+  "exigibilidade_iss": "",
+  "municipio_incidencia_ibge": "1702109",
+  "serie_rps": "",
+  "confirmado_em": "",
+  "confirmado_por": ""
+}

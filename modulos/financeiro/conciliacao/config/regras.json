@@ -1,0 +1,8 @@
+{
+  "_leia_me": "Tolerâncias e limiares do motor de matching (references/conciliacao/motor-matching.md). Baixar limiar_automatico abaixo de 85 é desaconselhável: R3 e R4 passariam a entrar no automático.",
+  "tolerancia_dias": 5,
+  "tolerancia_valor_pct": 2.0,
+  "limiar_automatico": 90,
+  "limiar_sugestao": 70,
+  "limiar_minimo_automatico_permitido": 85
+}

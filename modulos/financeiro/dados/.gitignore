@@ -1,0 +1,4 @@
+# Dados operacionais não são versionados: extrato bancário e log de auditoria
+# contêm dado pessoal e financeiro (LGPD, arts. 6º e 46).
+*
+!.gitignore

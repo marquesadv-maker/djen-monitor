@@ -1,0 +1,11 @@
+# Dependências do módulo Financeiro. Isoladas do restante do painel:
+# este serviço sobe sozinho, com seu próprio ambiente virtual.
+flask>=3.0
+gunicorn>=21.2
+
+# Opcional: leitura de extrato/títulos em .xlsx. Sem ela, o módulo diz que
+# não consegue ler o arquivo e pede CSV ou OFX — nunca finge que processou.
+openpyxl>=3.1
+
+# Opcional: leitura da validade do certificado A1 (alerta de vencimento).
+cryptography>=42.0

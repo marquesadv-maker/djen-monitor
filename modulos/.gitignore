@@ -1,0 +1,4 @@
+# Artefatos de execução do módulo — não versionados.
+__pycache__/
+*.pyc
+.venv/

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% set pagina = 'dashboard' %}
+{% block titulo %}Dashboard financeiro{% endblock %}
+
+{% block conteudo %}
+<div class="pagina-com-filtros">
+  <section>
+    <div class="kpis" id="kpis">
+      <div class="kpi"><div class="rotulo">Entrada</div><div class="esqueleto"></div></div>
+      <div class="kpi"><div class="rotulo">Saída</div><div class="esqueleto"></div></div>
+      <div class="kpi"><div class="rotulo">Saldo</div><div class="esqueleto"></div></div>
+      <div class="kpi"><div class="rotulo">% Margem</div><div class="esqueleto"></div></div>
+    </div>
+
+    <div class="bloco">
+      <h2>Entrada × Saída mensal</h2>
+      <div id="grafico-mensal"><div class="esqueleto" style="height:180px"></div></div>
+      <div class="legenda">
+        <span><i style="background:#1B2A4A"></i> Entrada</span>
+        <span><i style="background:#B08A3E"></i> Saída</span>
+        <span><i style="background:#2E7D53"></i> Total do mês</span>
+      </div>
+    </div>
+
+    <div class="grade-2">
+      <div class="bloco">
+        <h2>Status de recebimentos</h2>
+        <div id="grafico-status"><div class="esqueleto" style="height:160px"></div></div>
+      </div>
+      <div class="bloco">
+        <h2>Top fornecedores</h2>
+        <div id="top-fornecedores" class="barras"><div class="esqueleto"></div></div>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>Top clientes</h2>
+      <div id="top-clientes" class="barras"><div class="esqueleto"></div></div>
+    </div>
+  </section>
+
+  <aside class="filtros">
+    <h2>Filtros</h2>
+
+    <label for="f-ano">Ano</label>
+    <select id="f-ano" data-filtro="ano"><option value="">Todos</option></select>
+
+    <label for="f-mes">Mês</label>
+    <select id="f-mes" data-filtro="mes"><option value="">Todos</option></select>
+
+    <label for="f-banco">Banco</label>
+    <select id="f-banco" data-filtro="banco"><option value="">Todos</option></select>
+    <div class="sem-origem" id="sem-banco" hidden>
+      Sem origem: a exportação de títulos não trouxe a coluna de banco.
+    </div>
+
+    <label for="f-forma">Forma de pagamento</label>
+    <select id="f-forma" data-filtro="forma_pagamento"><option value="">Todas</option></select>
+    <div class="sem-origem" id="sem-forma" hidden>
+      Sem origem: coluna de forma de pagamento ausente na exportação.
+    </div>
+
+    <label for="f-cat-entrada">Categoria de entrada</label>
+    <select id="f-cat-entrada" data-filtro="categoria_entrada"><option value="">Todas</option></select>
+
+    <label for="f-cat-saida">Categoria de saída</label>
+    <select id="f-cat-saida" data-filtro="categoria_saida"><option value="">Todas</option></select>
+    <div class="sem-origem" id="sem-categoria" hidden>
+      Sem origem: coluna de categoria/centro de custo ausente na exportação.
+    </div>
+
+    <p style="margin-top:14px">
+      <button class="secundario" id="limpar-filtros" type="button">Limpar filtros</button>
+    </p>
+    <div class="atualizacao" id="atualizacao">Última atualização: —</div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('conciliacao.static', filename='dashboard.js') }}"></script>
+{% endblock %}

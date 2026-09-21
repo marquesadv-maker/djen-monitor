@@ -1,0 +1,8 @@
+{
+  "_leia_me": "Padrão 'negado'. Quem não está nesta lista não vê o módulo nem alcança a API por URL direta. A lista é definida pela responsável pelo financeiro — nenhum usuário é presumido aqui. Níveis: leitura | operacao | gravacao (por aba).",
+  "modulo": "financeiro",
+  "padrao": "negado",
+  "responsavel": "",
+  "cabecalho_identidade": "X-Usuario-Financeiro",
+  "usuarios": []
+}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% set pagina = 'nfse' %}
+{% block titulo %}NFS-e — Araguaína/TO{% endblock %}
+
+{% block conteudo %}
+
+<div class="bloco">
+  <h2>Cadastro fiscal do prestador</h2>
+  <table>
+    <tbody>
+      <tr><th>Razão social</th><td>{{ prestador.razao_social or '—' }}</td>
+          <th>CNPJ</th><td>{{ 'informado' if prestador.cnpj else 'EM BRANCO' }}</td></tr>
+      <tr><th>Inscrição municipal</th><td>{{ prestador.inscricao_municipal or 'EM BRANCO' }}</td>
+          <th>Item LC 116</th><td>{{ prestador.item_lc116_padrao or 'EM BRANCO' }}</td></tr>
+      <tr><th>Alíquota ISS</th>
+          <td>{% if prestador.aliquota_iss is not none %}{{ prestador.aliquota_iss }}%
+              {% elif prestador.regime_fixo_por_profissional %}regime fixo por profissional
+              {% else %}EM BRANCO{% endif %}</td>
+          <th>Série do RPS</th><td>{{ prestador.serie_rps or 'EM BRANCO' }}</td></tr>
+      <tr><th>Município de incidência</th><td>{{ prestador.municipio_incidencia_ibge }} (Araguaína/TO)</td>
+          <th>Confirmado em</th><td>{{ prestador.confirmado_em or '—' }}</td></tr>
+    </tbody>
+  </table>
+  <p class="meta" style="font-size:12px;margin-top:10px;color:rgba(27,42,74,.75)">
+    Campo em branco bloqueia a emissão. Regime, alíquota e item da LC 116 são
+    definição do contador — a tela não presume 2%, 3% ou 5%.
+    Editar em <code>modulos/financeiro/nfse/config/prestador.json</code>.
+  </p>
+</div>
+
+<div class="bloco">
+  <h2>1. Tarefas de nota fiscal pendentes</h2>
+  <div class="campo">
+    <label for="arquivo-tarefas">Exportação das tarefas de NF do Projuris (CSV)</label>
+    <input type="file" id="arquivo-tarefas" accept=".csv,.txt">
+  </div>
+  <button id="enviar-tarefas" type="button">Importar tarefas</button>
+  <div id="estado-tarefas" style="margin-top:10px"></div>
+  <div id="lista-tarefas" style="margin-top:14px"></div>
+</div>
+
+<div class="bloco" id="bloco-previa" hidden>
+  <h2>2. Prévia da nota</h2>
+  <div class="grade-2">
+    <div>
+      <div class="campo">
+        <label for="p-competencia">Competência (mês da prestação)</label>
+        <input type="month" id="p-competencia">
+      </div>
+      <div class="campo">
+        <label for="p-discriminacao">Discriminação do serviço</label>
+        <textarea id="p-discriminacao"></textarea>
+      </div>
+      <div class="campo">
+        <label for="p-item">Item da LC 116/2003 (sem ponto)</label>
+        <input type="text" id="p-item" placeholder="ex.: 1701">
+      </div>
+      <div class="campo">
+        <label><input type="checkbox" id="p-iss-retido"> ISS retido pelo tomador</label>
+      </div>
+    </div>
+    <div>
+      <div class="campo">
+        <label for="p-logradouro">Endereço do tomador — logradouro e número</label>
+        <input type="text" id="p-logradouro">
+      </div>
+      <div class="campo">
+        <label for="p-bairro">Bairro</label>
+        <input type="text" id="p-bairro">
+      </div>
+      <div class="campo">
+        <label for="p-municipio">Município do tomador (código IBGE)</label>
+        <input type="text" id="p-municipio" placeholder="1702109">
+      </div>
+      <div class="campo">
+        <label for="p-uf">UF</label>
+        <input type="text" id="p-uf" maxlength="2" placeholder="TO">
+      </div>
+      <div class="campo">
+        <label for="p-cep">CEP</label>
+        <input type="text" id="p-cep">
+      </div>
+    </div>
+  </div>
+
+  <p>
+    <button id="montar-previa" type="button">Montar prévia</button>
+    <button id="transmitir" class="secundario" type="button" disabled>Transmitir esta nota</button>
+  </p>
+
+  <div id="resultado-previa"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>window.NIVEL_NFSE = "{{ acesso.niveis.nfse }}";</script>
+<script src="{{ url_for('nfse.static', filename='nfse.js') }}"></script>
+{% endblock %}

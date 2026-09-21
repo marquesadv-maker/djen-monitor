@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}Financeiro{% endblock %}
+{% block conteudo %}
+
+<div class="grade-2">
+  <div class="bloco">
+    <h2>Conciliação bancária</h2>
+    <p>
+      Cruza o extrato (OFX, CSV ou XLSX) com as contas a receber e a pagar,
+      separa o que fecha sozinho do que precisa de olho humano e mostra o
+      <em>porquê</em> de cada correspondência. A baixa no Projuris só acontece
+      com aprovação item a item.
+    </p>
+    <p class="meta">
+      Seu nível nesta aba: <strong>{{ acesso.niveis.conciliacao }}</strong>
+    </p>
+    <p>
+      <a class="botao" href="/financeiro/conciliacao/dashboard">Dashboard</a>
+      <a class="botao" href="/financeiro/conciliacao/">Conciliar extrato</a>
+    </p>
+  </div>
+
+  <div class="bloco">
+    <h2>NFS-e — Araguaína/TO</h2>
+    <p>
+      Lê as tarefas de nota fiscal pendentes, monta o RPS (ABRASF 2.02),
+      valida campo a campo e mostra a prévia. A transmissão ao WebISS exige
+      aprovação da nota — em Araguaína a NFS-e não se cancela por web service,
+      só por substituição no portal.
+    </p>
+    <p class="meta">
+      Seu nível nesta aba: <strong>{{ acesso.niveis.nfse }}</strong>
+    </p>
+    <p><a class="botao" href="/financeiro/nfse/">Abrir NFS-e</a></p>
+  </div>
+</div>
+
+<div class="bloco">
+  <h2>Como as duas abas se ligam</h2>
+  <p>
+    A nota emitida vira título a receber; o título a receber é o que a
+    conciliação procura no extrato. Dado limpo na nota — documento do tomador,
+    valor exato, referência interna do contrato — é o que faz a conciliação
+    acertar depois.
+  </p>
+</div>
+
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Sem acesso{% endblock %}
+{% block conteudo %}
+<div class="bloco">
+  <h2>Acesso negado</h2>
+  <div class="estado">
+    <strong>Este módulo é restrito.</strong>
+    {{ mensagem }}
+  </div>
+  {% if acesso and acesso.lista_vazia %}
+  <div class="aviso">
+    A lista de acesso do financeiro ainda está vazia em
+    <code>modulos/financeiro/config/permissoes.json</code>. Enquanto ela não
+    for definida pela responsável, ninguém entra — o padrão do módulo é negar.
+  </div>
+  {% endif %}
+  {% if acesso and not acesso.identificado %}
+  <div class="aviso">
+    Nenhuma identidade chegou ao servidor. O painel envia o usuário no
+    cabeçalho <code>{{ acesso.cabecalho_identidade }}</code>; em execução local,
+    use a variável de ambiente <code>FINANCEIRO_USUARIO_LOCAL</code>.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

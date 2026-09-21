@@ -1,0 +1,56 @@
+{# Layout do módulo Financeiro. Vive dentro de modulos/financeiro/ e não é
+   compartilhado com nenhum outro módulo do painel — cópia é preferível a
+   acoplamento. #}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Financeiro{% endblock %} — MarquesPro</title>
+  <link rel="stylesheet" href="{{ url_for('financeiro_web.static', filename='financeiro.css') }}">
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">
+      MARQUESPRO
+      <small>Ambiente Financeiro</small>
+    </div>
+    <nav class="abas">
+      <a href="/financeiro/conciliacao/dashboard" class="{{ 'ativa' if pagina == 'dashboard' }}">Dashboard</a>
+      <a href="/financeiro/conciliacao/" class="{{ 'ativa' if pagina == 'conciliacao' }}">Conciliação</a>
+      <a href="/financeiro/nfse/" class="{{ 'ativa' if pagina == 'nfse' }}">NFS-e</a>
+    </nav>
+    <div class="identidade">
+      {% if acesso and acesso.identificado %}
+        {{ acesso.usuario }}<br>
+        conciliação: {{ acesso.niveis.conciliacao }} · nfs-e: {{ acesso.niveis.nfse }}
+      {% else %}
+        usuário não identificado
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="pagina">
+    {% if situacao %}
+    <div class="faixa-modo {{ 'escrita' if not situacao.simulacao else '' }}">
+      <span class="rotulo">
+        {% if situacao.simulacao %}Modo simulação{% else %}Escrita habilitada{% endif %}
+        {% if situacao.ambiente %} · {{ situacao.ambiente }}{% endif %}
+      </span>
+      <div>
+        {% if situacao.simulacao %}
+          Esta aba mostra o que faria e <strong>não grava</strong>. Pendências:
+          <ul>{% for p in situacao.pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+        {% else %}
+          A escrita está liberada neste ambiente. Cada item exige aprovação própria.
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
