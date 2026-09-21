@@ -5,12 +5,12 @@
    rede interna e não depende de CDN para desenhar. */
 
 const CORES = {
-  entrada: '#1B2A4A',
-  saida: '#B08A3E',
-  total: '#2E7D53',
+  entrada: '#0C0E34',
+  saida: '#8C5818',
+  total: '#401801',
   pago: '#2E7D53',
-  vencido: '#C9A227',
-  a_vencer: '#1B2A4A',
+  vencido: '#8C5818',
+  a_vencer: '#0C0E34',
   nao_conciliado: '#B3261E',
 };
 
@@ -114,10 +114,10 @@ function desenharMensal(dados) {
   for (let i = 0; i <= 4; i += 1) {
     const y = (alturaUtil / 4) * i;
     grupo.appendChild(el('line', {
-      x1: 0, x2: larguraUtil, y1: y, y2: y, stroke: 'rgba(27,42,74,.12)',
+      x1: 0, x2: larguraUtil, y1: y, y2: y, stroke: 'rgba(64,24,1,.12)',
     }));
     grupo.appendChild(el('text', {
-      x: -8, y: y + 4, 'text-anchor': 'end', 'font-size': 10, fill: '#1B2A4A',
+      x: -8, y: y + 4, 'text-anchor': 'end', 'font-size': 10, fill: '#401801',
     }, reais(maximo * (1 - i / 4))));
   }
 
@@ -140,15 +140,15 @@ function desenharMensal(dados) {
         // vizinha e sumiria, por ser da mesma cor.
         grupo.appendChild(el('text', {
           x: centro + deslocamento + larguraBarra / 2, y: y - 4,
-          'text-anchor': 'middle', 'font-size': 9, fill: '#1B2A4A',
-          stroke: '#F2EFE6', 'stroke-width': 3, 'paint-order': 'stroke',
+          'text-anchor': 'middle', 'font-size': 9, fill: '#401801',
+          stroke: '#fff', 'stroke-width': 3, 'paint-order': 'stroke',
         }, reais(valor)));
       }
     });
     pontos.push(`${centro},${escala(Math.abs(mes.total_centavos))}`);
     grupo.appendChild(el('text', {
       x: centro, y: alturaUtil + 18, 'text-anchor': 'middle',
-      'font-size': 11, fill: '#1B2A4A',
+      'font-size': 11, fill: '#401801',
     }, mes.rotulo));
   });
 
@@ -189,10 +189,10 @@ function desenharStatus(dados) {
 
   svg.appendChild(el('text', {
     x: cx, y: cy - 2, 'text-anchor': 'middle', 'font-size': 12,
-    fill: '#1B2A4A', 'font-weight': 700,
+    fill: '#401801', 'font-weight': 700,
   }, 'A receber'));
   svg.appendChild(el('text', {
-    x: cx, y: cy + 14, 'text-anchor': 'middle', 'font-size': 11, fill: '#1B2A4A',
+    x: cx, y: cy + 14, 'text-anchor': 'middle', 'font-size': 11, fill: '#401801',
   }, reais(total)));
 
   fatias.forEach((fatia, i) => {
@@ -201,7 +201,7 @@ function desenharStatus(dados) {
       x: 184, y: y - 9, width: 11, height: 11, rx: 2,
       fill: CORES[fatia.cor] || CORES.entrada,
     }));
-    svg.appendChild(el('text', { x: 202, y, 'font-size': 11, fill: '#1B2A4A' },
+    svg.appendChild(el('text', { x: 202, y, 'font-size': 11, fill: '#401801' },
       `${fatia.rotulo} — ${fatia.valor}`));
   });
 

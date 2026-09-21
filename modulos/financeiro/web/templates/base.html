@@ -6,14 +6,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titulo %}Financeiro{% endblock %} — MarquesPro</title>
+  <title>{% block titulo %}Financeiro{% endblock %} — Marques Advogados</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="{{ url_for('financeiro_web.static', filename='financeiro.css') }}">
 </head>
 <body>
   <header class="topo">
     <div class="marca">
-      MARQUESPRO
-      <small>Ambiente Financeiro</small>
+      <img src="{{ url_for('financeiro_web.static', filename='img/simbolo-m-branco.png') }}" alt="Marques Advogados">
+      <span class="nome">MARQUES ADVOGADOS<small>Ambiente Financeiro</small></span>
     </div>
     <nav class="abas">
       <a href="/financeiro/conciliacao/dashboard" class="{{ 'ativa' if pagina == 'dashboard' }}">Dashboard</a>
@@ -22,8 +24,7 @@
     </nav>
     <div class="identidade">
       {% if acesso and acesso.identificado %}
-        {{ acesso.usuario }}<br>
-        conciliação: {{ acesso.niveis.conciliacao }} · nfs-e: {{ acesso.niveis.nfse }}
+        <strong>{{ acesso.usuario }}</strong> · concil. {{ acesso.niveis.conciliacao }} · nfs-e {{ acesso.niveis.nfse }}
       {% else %}
         usuário não identificado
       {% endif %}
